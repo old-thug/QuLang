@@ -1,0 +1,4 @@
+
+fn foobar(a: i32) -> i32 { return a; }
+
+mut fn add(a: i32, b: i32) -> i32  {}

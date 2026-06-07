@@ -1,0 +1,9 @@
+[package]
+name = "qu-diagnostics"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+miette = { version = "7.6.0", features = ["fancy"] }
+qu-context = { path = "../qu-context/" }
+thiserror = "2.0.18"

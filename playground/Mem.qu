@@ -1,0 +1,30 @@
+// Std/Mem.qu
+
+use Root.C.*;
+use Root.Option.Opt;
+
+pub fn is_null[T](ptr: *const T) -> bool {
+    ptr != cast(*const void)0
+}
+
+pub fn alloc[T](count: usize) -> Opt[*mut T] {
+    let raw_ptr = C.malloc(count * sizeof(T));
+    if raw_ptr |> is_null {
+        Opt.None
+    } else {
+        Opt.Some(raw_ptr)
+    }
+}
+
+pub fn free[T](move ptr: *mut T) {
+    if sizeof(T) == 0 {
+        // No Op
+    } else {2
+        C.free(ptr);
+    }
+}
+
+pub fn fill[T](ptr: *mut T, bit: u8) -> *mut T {
+    C.memset(ptr, bit, sizeof(T));
+    ptr
+}

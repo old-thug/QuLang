@@ -1,0 +1,9 @@
+// Bool.qu
+
+pub fn if_true(val: bool, f: fn()) {
+    if val { f() }
+}
+
+pub fn if_false(val: bool, f: fn()) {
+    if !val { f() }
+}

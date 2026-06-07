@@ -1,0 +1,29 @@
+// Std/Opt.qu
+
+use Root.Core;
+
+pub type Option[T] =
+    Some(T)
+    | None
+    ;
+
+pub fn unwrap[T](move opt: Opt[T]) -> T {
+    if opt is {
+        .Some(val) => return val,
+        .None => Core.panic("Option::unwrap called on None"),
+    }
+}
+
+pub fn unwrap_or[T](move opt: Opt[T], default: T) -> T {
+    if opt is {
+        .Some(val) => return val,
+        .None => return default,
+    }
+}
+
+pub fn map[T, U](move opt: Opt[T], f: fn(T) -> U) -> Opt[U] {
+    if opt is {
+        .Some(val) => return Option.Some(f(val)),
+        .None => return None,
+    }
+}

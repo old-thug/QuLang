@@ -1,0 +1,8 @@
+
+
+pub fn forever(f: fn()) {
+    for {
+        f();
+    }
+}
+

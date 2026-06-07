@@ -1,0 +1,95 @@
+// Std/Collection/Vec.qu
+
+use Root.Mem;
+use Root.Option.Opt;
+use Root.Bool;
+
+/// The core nominal record for a growable vector.
+pub type Vec[T] = {
+    ptr: *mut T,
+    len: usize,
+    cap: usize,
+};
+
+/// Instantiates a completely empty vector without any heap allocations.
+pub fn new[T]() -> Vec[T] {
+    Vec[T] {
+        ptr: cast(*mut T)0, // Safe null pointer representation
+        len: 0,
+        cap: 0,
+    }
+}
+
+/// Appends a newly moved item to the back of the vector.
+pub fn push[T](mut this: Vec[T], move element: T) {
+    if this.len == this.cap {
+        this |> grow;
+    }
+
+    unsafe {
+        // Compute the address offset to store our data linearly
+        let slot_ptr = (this.ptr as usize + (this.len * sizeof(T))) as *mut T;
+        *slot_ptr = move element;
+    }
+    this.len = this.len + 1;
+}
+
+/// Internal utility function to handle vector backing store reallocation.
+fn grow[T](mut this: Vec[T]) {
+    let new_cap = if this.cap == 0 { 4 } else { this.cap * 2 };
+    
+    // Safety guard for Zero-Sized Types (e.g., Vec[()])
+    if sizeof(T) == 0 {
+        this.cap = new_cap;
+        return;
+    }
+
+    // Call memory allocation and handle the Opt result via standard boolean pipes
+    let new_ptr = Mem.alloc[T](new_cap) |> Opt.if_none(|| {
+        Process.abort("Error: Out of memory during Vec allocation bump.");
+    });
+
+    if this.len > 0 {
+        // Copy existing items linearly to the new heap block
+        C.memcpy(
+            cast(*mut void)new_ptr, 
+            cast(*const void)this.ptr, 
+            this.len * sizeof(T)
+        );
+        // Safely discard the previous outgrown heap frame
+        Mem.free[T](this.ptr);
+    }
+
+    this.ptr = new_ptr;
+    this.cap = new_cap;
+}
+
+/// Clears out all tracked elements, calling their respective deleters.
+pub fn clear[T](mut this: Vec[T]) {
+    // Compile-time specialization pass: code inside this pipe 
+    // entirely evaporates if T does not have a #[deleter]
+    @has_deleter(T) |> Bool.if_true(|| {
+        let deleter_fn = @get_deleter(T);
+        mut let i = 0;
+        for {
+            if i == this.len { break; }
+            unsafe {
+                let item_ptr = (this.ptr as usize + (i * sizeof(T))) as *mut T;
+                // Pull ownership out of the slot and invoke the deleter function
+                deleter_fn(move *item_ptr);
+            }
+            i = i + 1;
+        }
+    });
+
+    this.len = 0;
+}
+
+/// The global RAII contract for our nominal Vec type.
+#[deleter]
+pub fn delete_vec[T](move this: Vec[T]) {
+    this |> clear;
+    if this.cap > 0 {
+        Mem.free[T](this.ptr);
+    }
+}

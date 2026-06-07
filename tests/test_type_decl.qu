@@ -1,0 +1,29 @@
+
+type Shape =
+   Circle(f32)
+   | Rectangle(f32, f32)
+   | Triangle(f32, f32)
+   ;
+
+type Person = {
+    name: string;
+    age: i32;
+}
+
+fn calculate_radius(shape: Shape) -> f32 {
+    if shape is {
+        Shape.Circle(radius) => 3.14 * radius * radius,
+        Shape.Rectangle(length, breadth) => length * breadth,
+        # 1/2 * b * h
+        Shape.Triangle(height, breadth) => (1/2) * height * breadth,
+    }
+}
+
+fn main() {
+    let radius = 
+        Shape.Circle(10)
+        |> calculate_radius
+        ;
+    "Radius = {}"
+    |> Fmt.println(radius);
+}

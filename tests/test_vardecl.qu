@@ -1,0 +1,8 @@
+fn add(a: i32, move b: i32) -> i32 {
+return a + b;
+}
+
+fn main() {
+    let x = 0;
+    mut let y = 40;
+}

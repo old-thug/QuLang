@@ -1,0 +1,14 @@
+[workspace]
+members = [
+        "compiler/qu-ast",
+        "compiler/qu-backend", "compiler/qu-context",
+        "compiler/qu-diagnostics",
+        "compiler/qu-frontend",
+        "compiler/qu-ir",
+        "compiler/qu-parser",
+        "compiler/qu-semantics",
+]
+resolver = "2"
+
+[workspace.dependencies]
+

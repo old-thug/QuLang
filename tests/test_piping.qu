@@ -1,0 +1,11 @@
+
+fn cb(a: i32) -> i32 { return a; }
+
+fn get_cb() -> fn(i32) {
+    return cb;
+}
+
+fn test_piping() {
+    let x = 40;
+    let y = x |> get_cb;
+}
