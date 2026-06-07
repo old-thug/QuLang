@@ -1,0 +1,9 @@
+[package]
+name = "qu-parser"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+qu-context = { path = "../qu-context/" }
+qu-diagnostics = { path = "../qu-diagnostics/" }
+qu-ast = { path = "../qu-ast/" }
