@@ -1,10 +1,10 @@
-use std::{ffi::os_str::Display, fmt::Display as FD};
+use std::{fmt::Display as FD};
 
 use crate::span::Span;
 pub mod span;
 
 use miette::{
-    Diagnostic as MietteDiagnostic, LabeledSpan, NamedSource, Report, SourceCode, SourceSpan,
+    Diagnostic as MietteDiagnostic, LabeledSpan, NamedSource, Report, SourceSpan,
 };
 use thiserror::Error;
 
@@ -36,7 +36,7 @@ impl From<Severity> for miette::Severity {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Label {
     label: String,
     span: Span,
@@ -44,7 +44,7 @@ pub struct Label {
 }
 
 // Implement the Error trait so miette can print the top-level message
-#[derive(Debug, Error)]
+#[derive(Debug, Error, Clone)]
 #[error("{message}")]
 pub struct Diagnostic {
     severity: Severity,
@@ -119,14 +119,12 @@ impl Diagnostic {
     }
 
     pub fn into_report(self, ctx: &qu_context::Context) -> Report {
-        let sev = self.severity;
         let source_code = ctx.get_source_file(self.labels[0].span.source_id).unwrap();
         let report = Report::new(self);
         report
             .with_source_code(NamedSource::new(
                 source_code.path.clone(),
                 source_code.content.clone(),
-            ))     
-            .context(sev) 
+            ))
     }
 }

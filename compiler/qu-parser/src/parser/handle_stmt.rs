@@ -9,7 +9,7 @@ use crate::{
     PResult,
     parse_context::ParseContext,
     parser::{
-        handle_expr::{Precedence, parse_block_, parse_expression},
+        handle_expr::{Precedence, parse_block_, parse_block_expr, parse_expression},
         handle_type::{TypeContext, parse_type_hint},
     },
     tok,
@@ -176,7 +176,7 @@ pub(super) fn parse_function(
     }
 
     ctx.eat([tok!(sp Separator::OpenBrace)])?;
-    let body = parse_block_(ctx)?;
+    let body = parse_block_expr(ctx)?;
     Some(qu_ast::stmt::Stmt::new_function_definition(
             fn_kw.span.cover(ctx.previous().span),
             visibility.get().clone(),
@@ -208,8 +208,8 @@ pub(super) fn parse_vardecl(
     } else {
         None
     };
-    ctx.eat_or_else(tok!(op Operator::Assign),|t| t, |this| { 
-        this.skip_until(true, |t| t.is_sp(Separator::SemiColon)); 
+    ctx.eat_or_else(tok!(op Operator::Assign),|t| t, |this| {
+        this.skip_until(true, |t| t.is_sp(Separator::SemiColon));
         None
     })?;
     let initializer = match parse_expression(ctx, Precedence::None) {

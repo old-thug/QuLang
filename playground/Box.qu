@@ -1,0 +1,23 @@
+use Std.Core.Allocator.{self as Alloc, Allocator};
+use Std.Mem.HeapAllocator;
+use Std.Result;
+
+type Box[T] = {
+    ptr: *mut T;
+    allocator: Allocator;
+}
+
+pub fn new[T](value: T) -> Box[T] {
+    let allocator = HeapAllocator.new()
+        |> HeapAllocator.allocator
+        ;
+    let ptr = allocator
+        |> Alloc.alloc(sizeof(T))
+        |> Result.expect("internal allocation failed")
+        ;
+    ptr.* = value;
+    return .{ .ptr = ptr, .allocator = allocator };
+}
+
+pub fn with_allocator[T](value: T, allocator: Allocator) -> Box[T] {
+}

@@ -1,5 +1,5 @@
 use qu_ast::{
-    expr::{BinaryOperator, ExprData, ExprRef},
+    expr::{BinaryOperator, Expr, ExprData, ExprRef},
     stmt,
 };
 use qu_diagnostics::{Diagnostic, Severity};
@@ -216,8 +216,14 @@ fn parse_pipe_expr(ctx: &mut ParseContext, _lhs: ExprRef) -> PResult<ExprRef> {
     todo!()
 }
 
-fn parse_block_expr(ctx: &mut ParseContext) -> PResult<ExprRef> {
-    todo!()
+pub(super) fn parse_block_expr(ctx: &mut ParseContext) -> PResult<ExprRef> {
+    let begin = ctx.current().span;
+    let block = parse_block_(ctx)?;
+    let end   = ctx.current().span;
+    Some(Expr::new(
+        begin.cover(end),
+        ExprData::Block(block)
+    ))
 }
 
 pub(super) fn parse_block_(ctx: &mut ParseContext) -> PResult<qu_ast::expr::Block> {
@@ -250,4 +256,3 @@ pub(super) fn parse_block_(ctx: &mut ParseContext) -> PResult<qu_ast::expr::Bloc
     ctx.eat([tok!(sp Separator::CloseBrace)])?;
     Some(qu_ast::expr::Block { stmts })
 }
-

@@ -4,9 +4,9 @@ use crate::{Name, generics::Generics};
 
 #[derive(Debug, Clone)]
 pub struct Type {
-    span: Span,
-    data: TypeData,
-    mutability: Mutability,
+    pub span: Span,
+    pub data: TypeData,
+    pub mutability: Mutability,
 }
 
 #[derive(Debug, Clone, Default)]

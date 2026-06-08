@@ -1,0 +1,47 @@
+use Std.Os.Args;
+use Std.Opt.{., Option};
+use Std.Default;
+use Std.Iter;
+
+type Command = {
+     input_file: Option[String];
+     output_file: String;
+     target_stage:
+        Executable
+        | Codegen
+        | Ir
+        | Object
+        ;
+     verbose: bool;
+}
+
+// Create a vtable for Default with Command
+impl Default[Command] {
+     fn default() -> Command {
+        return .{
+               .input_file = .None,
+               .output_file = "a.out",
+               .target_stage = .Executable,
+               .verbose = false,
+        };
+     }
+}
+
+fn parse_arguments(cmd: &mut Command) {
+   let args = Args.get()
+       |> Iter.skip(0)
+       |> Opt.expect("no program name given")
+       ;
+
+   mut let counter = 1;
+}
+
+fn main() {
+   mut let cmd: Command = Default.default();
+   parse_arguments(&mut cmd);
+   cmd.input_file
+   |> Opt.if_none(|| {
+      Std.Fmt.prinln_err("error: no input file specified. nothing to do");
+      Std.Os.exit(1);
+   });
+}

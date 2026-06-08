@@ -310,6 +310,11 @@ dependencies = [
 [[package]]
 name = "qu-semantics"
 version = "0.1.0"
+dependencies = [
+ "qu-ast",
+ "qu-context",
+ "qu-diagnostics",
+]
 
 [[package]]
 name = "quc"
@@ -318,6 +323,7 @@ dependencies = [
  "clap",
  "qu-context",
  "qu-parser",
+ "qu-semantics",
 ]
 
 [[package]]

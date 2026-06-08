@@ -9,7 +9,7 @@ pub struct SourceId(pub usize);
 #[derive(Debug, Clone, Copy)]
 pub struct ModuleId(pub usize);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Storage<K: Hash + Eq, V> {
     map: HashMap<K, usize>,
     pool: Vec<V>,
@@ -31,7 +31,7 @@ impl Context {
 
     pub fn source(&mut self, path: &str) -> Result<SourceId, std::io::Error> {
         let canon_path = std::fs::canonicalize(path)?.display().to_string();
-        match self.sources.get_by_id_key(canon_path) {
+        match self.sources.get_by_id_key(&canon_path) {
             Some(source_id) => { return Ok(SourceId(source_id)) },
             None => {
                 let new_source = source::Source::new(path.to_string())?;
@@ -41,7 +41,7 @@ impl Context {
     }
 
     pub fn get_or_put_new_module(&mut self, name: String) -> ModuleId {
-        match self.modules.get_by_id_key(name.clone()) {
+        match self.modules.get_by_id_key(&name) {
             Some(id) => ModuleId(id),
             None => {
                 let new_mod = module::Module::new();
@@ -67,12 +67,12 @@ impl<K: Hash + Eq, V> Storage<K, V> {
         }
     }
 
-    pub fn get_by_id_key(&self, key: K) -> Option<usize> {
+    pub fn get_by_id_key(&self, key: &K) -> Option<usize> {
         self.map.get(&key).copied()
     }
 
     pub fn put(&mut self, key: K, value: V) -> usize {
-        match self.get_by_id_key(key) {
+        match self.get_by_id_key(&key) {
             Some(id) => {
                 self.pool.insert(id, value);
                 return id;
@@ -83,5 +83,27 @@ impl<K: Hash + Eq, V> Storage<K, V> {
                 return new_id;
             }
         }
+    }
+
+    pub fn map(&mut self, key: K, id: usize) -> Option<usize> {
+        self.map.insert(key, id)
+    }
+
+    pub fn get_from_key(&mut self, key: &K) -> Option<&V> {
+        let id = self.get_by_id_key(key)?;
+        self.pool.get(id)
+    }
+
+    pub fn get_from_key_mut(&mut self, key: &K) -> Option<&mut V> {
+        let id = self.get_by_id_key(key)?;
+        self.pool.get_mut(id)
+    }
+
+    pub fn get_pool(&self) -> &Vec<V> {
+        &self.pool
+    }
+
+    pub fn get_pool_mut(&mut self) -> &mut Vec<V> {
+        &mut self.pool
     }
 }

@@ -13,6 +13,7 @@ pub(super) fn parse_type_hint(
     ctx: &mut ParseContext,
     context: TypeContext,
 ) -> PResult<TypeRef> {
+    let begin = ctx.current();
     let mutability = if ctx.try_eat(tok!(kw Keyword::Mut))? {
         qu_ast::type_hint::Mutability::Mutable
     } else {
@@ -53,6 +54,6 @@ pub(super) fn parse_type_hint(
         }
         _ => todo!()
     };
-    
-    Some(Type::new(ctx.current().span, data, mutability))
+
+    Some(Type::new(begin.span.cover(ctx.previous().span), data, mutability))
 }

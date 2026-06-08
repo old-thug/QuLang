@@ -23,10 +23,10 @@ pub enum StmtData {
 
 #[derive(Debug, Clone)]
 pub struct VariableDecl {
-    mutability: Mutability,
-    name: Name,
-    type_hint: Option<TypeRef>,
-    initializer: ExprRef,
+    pub mutability: Mutability,
+    pub name: Name,
+    pub type_hint: Option<TypeRef>,
+    pub initializer: ExprRef,
 }
 
 #[derive(Debug, Clone)]
@@ -51,13 +51,13 @@ pub enum FunctionDeclKind {
 
 #[derive(Debug, Clone)]
 pub struct FunctionDefinition {
-    visibility: Visibility,
-    mutability: Mutability,
-    kind: FunctionDeclKind,
-    name: Name,
-    generics: Generics,
-    prototype: FunctionPrototype,
-    body: Option<expr::Block>,
+    pub visibility: Visibility,
+    pub mutability: Mutability,
+    pub kind: FunctionDeclKind,
+    pub name: Name,
+    pub generics: Generics,
+    pub prototype: FunctionPrototype,
+    pub body: Option<ExprRef>,
 }
 
 #[derive(Debug, Clone)]
@@ -92,7 +92,7 @@ pub struct ModuleSpec {
 
 #[derive(Debug, Clone)]
 pub struct Return {
-    expr: ExprRef,
+    pub expr: ExprRef,
 }
 
 impl Stmt {
@@ -132,7 +132,7 @@ impl Stmt {
         name: Name,
         generics: Generics,
         prototype: FunctionPrototype,
-        body: Option<expr::Block>,
+        body: Option<ExprRef>,
     ) -> StmtRef {
         Self::new(span, StmtData::FunctionDefinition(FunctionDefinition { visibility, mutability, kind, name, generics, prototype, body }))
     }
