@@ -1,4 +1,4 @@
-use qu_diagnostics::span::Span;
+use qu_span::Span;
 
 use crate::{Name, generics::Generics};
 
@@ -90,6 +90,10 @@ pub struct Record {
 
 impl Type {
     pub fn new(span: Span, data: TypeData, mutability: Mutability) -> Box<Self> {
-        Box::new(Self { span, data, mutability })
+        Box::new(Self {
+            span,
+            data,
+            mutability,
+        })
     }
 }

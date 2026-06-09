@@ -5,5 +5,6 @@ edition = "2024"
 
 [dependencies]
 miette = { version = "7.6.0", features = ["fancy"] }
-qu-context = { path = "../qu-context/" }
 thiserror = "2.0.18"
+qu-context = { path = "../qu-context/" }
+qu-span    = { path = "../qu-span/" }

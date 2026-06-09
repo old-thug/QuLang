@@ -1,5 +1,5 @@
 use super::TypeChecker;
-use super::layout::{TypeId, TypeKind};
+use qu_entities::layout::{TypeId, TypeKind};
 
 #[derive(Debug, Clone)]
 pub enum CoerceResult {
@@ -23,7 +23,11 @@ impl<'a> TypeCoercer<'a> {
             return CoerceResult::Identity;
         }
 
-        let mut coercer = TypeCoercer { ctx, target: expected_id, source: source_id };
+        let mut coercer = TypeCoercer {
+            ctx,
+            target: expected_id,
+            source: source_id,
+        };
         coercer.check_integer_cast_required()
     }
 

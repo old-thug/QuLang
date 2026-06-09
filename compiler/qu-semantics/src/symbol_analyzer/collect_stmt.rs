@@ -1,9 +1,11 @@
 use qu_ast::stmt::{self, StmtRef};
 use qu_diagnostics::{Diagnostic, Label, Severity};
+use qu_entities::symbol::Symbol;
+use qu_common::extract;
 
-use crate::{extract, symbol_analyzer::{SymbolAnalyzer, symbol::Symbol}};
+use crate::symbol_analyzer::SymbolAnalyzer;
 
-impl SymbolAnalyzer {
+impl<'a> SymbolAnalyzer<'a> {
     pub(super) fn collect_stmt(&mut self, stmt: &StmtRef) -> Option<()> {
         match stmt.data() {
             stmt::StmtData::FunctionDefinition(_) => self.collect_function(stmt),
@@ -17,11 +19,18 @@ impl SymbolAnalyzer {
         let current_scope_id = self.current_scope_id();
         {
             let function_name = &function.name;
-            if self.find_id_in_scope_and(current_scope_id, &function_name.value, |this, id| {
-                let first_defined = this.get_symbol(id).map(|i| i.defined_at);
-                super::error::redefinition_of_symbol(this, function_name.clone(), first_defined);
-                Some(())
-            }).is_some() {
+            if self
+                .find_id_in_scope_and(current_scope_id, &function_name.value, |this, id| {
+                    let first_defined = this.get_symbol(id).map(|i| i.defined_at);
+                    super::error::redefinition_of_symbol(
+                        this,
+                        function_name.clone(),
+                        first_defined,
+                    );
+                    Some(())
+                })
+                .is_some()
+            {
                 return None;
             }
             self.add_new_empty_symbol_to_scope(function_name.clone(), current_scope_id);

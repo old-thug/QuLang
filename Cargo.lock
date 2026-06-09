@@ -274,16 +274,29 @@ dependencies = [
 name = "qu-ast"
 version = "0.1.0"
 dependencies = [
- "qu-diagnostics",
+ "qu-span",
 ]
 
 [[package]]
 name = "qu-backend"
 version = "0.1.0"
+dependencies = [
+ "qu-common",
+ "qu-ir",
+]
+
+[[package]]
+name = "qu-common"
+version = "0.1.0"
 
 [[package]]
 name = "qu-context"
 version = "0.1.0"
+dependencies = [
+ "qu-common",
+ "qu-module",
+ "qu-source",
+]
 
 [[package]]
 name = "qu-diagnostics"
@@ -291,12 +304,37 @@ version = "0.1.0"
 dependencies = [
  "miette",
  "qu-context",
+ "qu-span",
  "thiserror",
+]
+
+[[package]]
+name = "qu-entities"
+version = "0.1.0"
+dependencies = [
+ "qu-common",
+ "qu-span",
 ]
 
 [[package]]
 name = "qu-ir"
 version = "0.1.0"
+dependencies = [
+ "qu-ast",
+ "qu-common",
+ "qu-context",
+ "qu-diagnostics",
+ "qu-entities",
+ "qu-module",
+]
+
+[[package]]
+name = "qu-module"
+version = "0.1.0"
+dependencies = [
+ "qu-common",
+ "qu-entities",
+]
 
 [[package]]
 name = "qu-parser"
@@ -305,6 +343,8 @@ dependencies = [
  "qu-ast",
  "qu-context",
  "qu-diagnostics",
+ "qu-source",
+ "qu-span",
 ]
 
 [[package]]
@@ -312,8 +352,23 @@ name = "qu-semantics"
 version = "0.1.0"
 dependencies = [
  "qu-ast",
+ "qu-common",
  "qu-context",
  "qu-diagnostics",
+ "qu-entities",
+ "qu-module",
+ "qu-span",
+]
+
+[[package]]
+name = "qu-source"
+version = "0.1.0"
+
+[[package]]
+name = "qu-span"
+version = "0.1.0"
+dependencies = [
+ "qu-source",
 ]
 
 [[package]]
@@ -321,7 +376,9 @@ name = "quc"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "qu-backend",
  "qu-context",
+ "qu-ir",
  "qu-parser",
  "qu-semantics",
 ]

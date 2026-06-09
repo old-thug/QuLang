@@ -1,9 +1,8 @@
 use std::fmt::Binary;
 
-use qu_diagnostics::span::Span;
+use qu_span::Span;
 
 use crate::{Name, stmt::StmtRef, type_hint::TypeRef};
-
 
 #[derive(Debug, Clone)]
 pub struct Expr {
@@ -22,14 +21,8 @@ pub enum ExprData {
     Cast(TypeRef, ExprRef),
     Call(Call),
     Initializer(Vec<(Option<Name>, ExprRef)>),
-    Index {
-        reciever: ExprRef,
-        index: ExprRef,
-    },
-    MemberAccess {
-        reciever: ExprRef,
-        member: Name,
-    },
+    Index { reciever: ExprRef, index: ExprRef },
+    MemberAccess { reciever: ExprRef, member: Name },
     Identifier(String),
     Block(Block),
     Yeild(ExprRef),
@@ -99,7 +92,6 @@ pub enum UnaryOperator {
     Not,
 }
 
-
 // Grammar:
 //      `(`, [ expr, { `,`, expr }* ], `)`
 #[derive(Debug, Clone)]
@@ -120,12 +112,27 @@ impl Expr {
         Box::new(Expr { span, data })
     }
 
-    pub fn new_binary(span: Span, left: ExprRef, right: ExprRef, operator: BinaryOperator) -> ExprRef {
-        Self::new(span, ExprData::BinaryOperation(BinaryOperation { left, right, operator }))
+    pub fn new_binary(
+        span: Span,
+        left: ExprRef,
+        right: ExprRef,
+        operator: BinaryOperator,
+    ) -> ExprRef {
+        Self::new(
+            span,
+            ExprData::BinaryOperation(BinaryOperation {
+                left,
+                right,
+                operator,
+            }),
+        )
     }
 
     pub fn new_unary(span: Span, operand: ExprRef, operator: UnaryOperator) -> ExprRef {
-        Self::new(span, ExprData::UnaryOperation(UnaryOperation { operand, operator }))
+        Self::new(
+            span,
+            ExprData::UnaryOperation(UnaryOperation { operand, operator }),
+        )
     }
 
     pub fn new_call(span: Span, callee: ExprRef, arguments: Vec<ExprRef>) -> ExprRef {

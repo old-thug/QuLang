@@ -6,13 +6,13 @@ type AllocError = OutOfMem
       ;
 
 type AllocatorProcedure =
-    fn(ctx: *mut u8, mode: Alloc | Free | FreeAll | Realloc, sz: usize, old_ptr: Option[*mut u8], old_sz: Option[usize])
+      fn(ctx: *mut u8, mode: Alloc | Free | FreeAll | Realloc, sz: usize, old_ptr: Option[*mut u8], old_sz: Option[usize])
        -> Result[*mut u8, AllocError];
 
 type Allocator = {
     context: *mut u8;
     procedure: AllocatorProcedure;
-    }
+}
 
 pub fn new(context: *mut u8, procedure: AllocatorProcedure) -> Allocator {
     return .{

@@ -1,12 +1,12 @@
 [workspace]
 members = [
         "compiler/qu-ast",
-        "compiler/qu-backend", "compiler/qu-context",
-        "compiler/qu-diagnostics",
+        "compiler/qu-backend", "compiler/qu-common", "compiler/qu-context",
+        "compiler/qu-diagnostics", "compiler/qu-entities",
         "compiler/qu-frontend",
-        "compiler/qu-ir",
+        "compiler/qu-ir", "compiler/qu-module",
         "compiler/qu-parser",
-        "compiler/qu-semantics",
+        "compiler/qu-semantics", "compiler/qu-span", "compiler/qu-source",
 ]
 resolver = "2"
 

@@ -1,4 +1,4 @@
-use qu_diagnostics::span::Span;
+use qu_span::Span;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub enum TokenKind {
@@ -39,7 +39,7 @@ pub enum Operator {
     ShiftLeftAssign,
     ShiftRightAssign,
 
-    Pipe,  // |>
+    Pipe, // |>
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

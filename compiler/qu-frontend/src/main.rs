@@ -1,5 +1,6 @@
 #[allow(unused)]
 use clap::Parser;
+use qu_backend::BackendGenerator;
 use qu_context::Context;
 use qu_semantics::{symbol_analyzer::SymbolAnalyzer, type_checker::TypeChecker};
 
@@ -39,10 +40,9 @@ fn run() -> Result<(), String> {
             }
         }
     };
-
-    let mut sym_analyzer = SymbolAnalyzer::new();
-
-    let (mut symbols, scopes) = match sym_analyzer.run(&ast) {
+    let module = context.get_module(_root_id).unwrap();
+    let mut sym_analyzer = SymbolAnalyzer::new(module);
+    let _ = match sym_analyzer.run(&ast) {
         Ok(result) => result,
         Err(diags) => {
             let count = diags.len();
@@ -54,17 +54,32 @@ fn run() -> Result<(), String> {
     };
 
     {
-        let mut type_checker = TypeChecker::new(&scopes, &mut symbols);
+        let mut type_checker = TypeChecker::new(module);
         let _types = match type_checker.run(&ast) {
             Ok(result) => result,
             Err(diags) => {
-            let count = diags.len();
+                let count = diags.len();
                 for diag in diags {
                     println!("{:?}", diag.into_report(&context));
                 }
                 return Err(format!("compilation failed with {} errors", count));
             }
         };
+    }
+
+    {
+        let mut ir_module = qu_ir::IrModule::new("root".to_string());
+        let mut ir_lowerer = qu_ir::lower::IrLowerer::new(&mut ir_module, module);
+        match ir_lowerer.lower_ast(ast) {
+            Ok(()) => {
+            },
+            Err(()) => todo!(),
+        }
+
+        match BackendGenerator::generate_module(&ir_module, qu_backend::TargetKind::Ccode, command.output_path) {
+            Ok(_) => (),
+            Err(err) => return Err(err.to_string()),
+        }
     }
 
     Ok(())

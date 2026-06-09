@@ -174,10 +174,13 @@ fn parse_primary_expr(ctx: &mut ParseContext) -> PResult<ExprRef> {
             ));
         }
         tok!(lt Literal::Integer) => {
-            let value = ctx.slice(token.span).parse::<i64>().expect("integer literal");
+            let value = ctx
+                .slice(token.span)
+                .parse::<i64>()
+                .expect("integer literal");
             return Some(qu_ast::expr::Expr::new(
-                    token.span,
-                    ExprData::Integer(value)
+                token.span,
+                ExprData::Integer(value),
             ));
         }
         _ => todo!(),
@@ -219,11 +222,8 @@ fn parse_pipe_expr(ctx: &mut ParseContext, _lhs: ExprRef) -> PResult<ExprRef> {
 pub(super) fn parse_block_expr(ctx: &mut ParseContext) -> PResult<ExprRef> {
     let begin = ctx.current().span;
     let block = parse_block_(ctx)?;
-    let end   = ctx.current().span;
-    Some(Expr::new(
-        begin.cover(end),
-        ExprData::Block(block)
-    ))
+    let end = ctx.current().span;
+    Some(Expr::new(begin.cover(end), ExprData::Block(block)))
 }
 
 pub(super) fn parse_block_(ctx: &mut ParseContext) -> PResult<qu_ast::expr::Block> {

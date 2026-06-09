@@ -8,3 +8,5 @@ clap = { version = "4.6.1", features = ["derive"] }
 qu-context = { path = "../qu-context/" }
 qu-parser = { path = "../qu-parser/" }
 qu-semantics = { path = "../qu-semantics/" }
+qu-ir = { path = "../qu-ir/" }
+qu-backend = { path = "../qu-backend/" }

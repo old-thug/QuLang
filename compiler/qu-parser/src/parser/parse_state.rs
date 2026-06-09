@@ -1,6 +1,5 @@
 use crate::token::Token;
 
-
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum StateKind {
     GlobalDeclration,
@@ -16,18 +15,26 @@ pub enum StateKind {
 pub struct State {
     kind: StateKind,
     has_error: bool,
-    begin: Option<Token>
+    begin: Option<Token>,
 }
 
 impl From<StateKind> for State {
     fn from(kind: StateKind) -> Self {
-        Self { kind, has_error: false, begin: None }
+        Self {
+            kind,
+            has_error: false,
+            begin: None,
+        }
     }
 }
 
 impl State {
     pub fn new(kind: StateKind) -> Self {
-        Self { kind, has_error: false, begin: None }
+        Self {
+            kind,
+            has_error: false,
+            begin: None,
+        }
     }
 
     pub fn kind(&self) -> StateKind {

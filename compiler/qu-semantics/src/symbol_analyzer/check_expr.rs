@@ -1,12 +1,13 @@
 use qu_ast::expr::{self, ExprRef};
-use qu_diagnostics::span::Span;
+use qu_entities::scope::ScopeFlag;
+use qu_span::Span;
+use qu_common::extract;
 
-use crate::{extract, symbol_analyzer::check_stmt};
+use crate::symbol_analyzer::check_stmt;
 
-use super::{SymbolAnalyzer, scope::ScopeFlag};
+use super::SymbolAnalyzer;
 
-
-impl SymbolAnalyzer {
+impl<'a> SymbolAnalyzer<'a> {
     pub(super) fn check_expression(&mut self, expr: &ExprRef) -> Option<()> {
         match expr.data() {
             expr::ExprData::Block(_) => self.check_block_expr(expr),
@@ -38,7 +39,7 @@ impl SymbolAnalyzer {
         match self.get_symbol_id_from_name(name.to_string()) {
             Some(sym_id) => {
                 self.map_locus_to_symbol(expr.span, sym_id);
-            },
+            }
             None => todo!(),
         }
         Some(())

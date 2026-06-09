@@ -1,44 +1,37 @@
 #![allow(unused)]
 mod check_expr;
 mod check_stmt;
-pub mod layout;
 mod resolver;
 mod type_coercer;
 
 use std::any::Any;
 
-use layout::{TypeId, TypeLayout};
 use qu_ast::{Ast, stmt};
-use qu_context::Storage;
-use qu_diagnostics::{
-    Diagnostic,
-    span::{self, Span},
-};
+use qu_common::Storage;
+use qu_diagnostics::Diagnostic;
+use qu_entities::{TypeStorage, layout};
+use qu_entities::layout::{TypeId, TypeLayout};
+use qu_entities::scope::ScopeStorage;
+use qu_entities::symbol::SymbolStorage;
+use qu_module::Module;
+use qu_span::Span;
 use type_coercer::{CoerceResult, TypeCoercer};
-
-use crate::symbol_analyzer::{ScopeStorage, SymbolStorage};
-
-pub type TypeStorage = Storage<Span, TypeLayout>;
 
 #[derive(Debug)]
 pub struct TypeChecker<'a> {
-    scopes: &'a ScopeStorage,
-    symbols: &'a mut SymbolStorage,
-    types: TypeStorage,
+    module: &'a mut Module,
     diagnostics: Vec<Diagnostic>,
 }
 
 impl<'a> TypeChecker<'a> {
-    pub fn new(scopes: &'a ScopeStorage, symbols: &'a mut SymbolStorage) -> Self {
+    pub fn new(module: &'a mut Module) -> Self {
         Self {
-            scopes,
-            symbols,
-            types: TypeStorage::new(),
+            module,
             diagnostics: Vec::new(),
         }
     }
 
-    pub fn run(&mut self, ast: &Ast) -> Result<TypeStorage, Vec<Diagnostic>> {
+    pub fn run(&mut self, ast: &Ast) -> Result<(), Vec<Diagnostic>> {
         self.register_builtin_types();
         self.collect_types(ast);
         for stmt in ast {
@@ -48,7 +41,7 @@ impl<'a> TypeChecker<'a> {
         if self.diagnostics.len() != 0 {
             Err(std::mem::replace(&mut self.diagnostics, Vec::new()))
         } else {
-            Ok(std::mem::replace(&mut self.types, TypeStorage::new()))
+            Ok(())
         }
     }
 
@@ -67,7 +60,7 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub(super) fn map_locus_to_type(&mut self, span: Span, type_id: &TypeId) {
-        self.types.map(span, type_id.0);
+        self.module.get_types_mut().map(span, type_id.0);
     }
 
     pub(super) fn get_type_name(&mut self, type_id: &TypeId) -> String {
@@ -90,20 +83,20 @@ impl<'a> TypeChecker<'a> {
     }
 
     fn get_type_id_of_kind(&mut self, type_kind: layout::TypeKind) -> layout::TypeId {
-        for (id, type_layout) in self.types.get_pool().iter().enumerate() {
-            if matches!(&type_layout.kind, type_kind) {
+        for (id, type_layout) in self.module.get_types_mut().get_pool().iter().enumerate() {
+            if type_layout.kind == type_kind {
                 return layout::TypeId(id);
             }
         }
-        let new_id = self.types.get_pool().len();
-        self.types
+        let new_id = self.module.get_types_mut().get_pool().len();
+        self.module.get_types_mut()
             .get_pool_mut()
             .push(TypeLayout::new(type_kind, None));
         layout::TypeId(new_id)
     }
 
     pub(super) fn get_type_layout_from_id(&self, type_id: &TypeId) -> Option<&TypeLayout> {
-        self.types.get_pool().get(type_id.0)
+        self.module.get_types().get_pool().get(type_id.0)
     }
 
     pub(super) fn try_coerce(

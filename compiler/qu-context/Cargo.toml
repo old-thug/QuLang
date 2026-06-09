@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+qu-module = { path = "../qu-module/" }
+qu-common = { path = "../qu-common/" }
+qu-source = { path = "../qu-source/" }

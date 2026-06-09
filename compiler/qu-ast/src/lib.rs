@@ -1,12 +1,12 @@
 #![allow(unused)]
-use qu_diagnostics::span::Span;
+use qu_span::Span;
 
 use crate::stmt::StmtRef;
 
 pub mod expr;
-pub mod type_hint;
-pub mod stmt;
 pub mod generics;
+pub mod stmt;
+pub mod type_hint;
 
 #[derive(Debug, Clone)]
 pub struct Name {

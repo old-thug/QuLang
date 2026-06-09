@@ -1,24 +1,16 @@
+#![allow(unused)]
+use qu_common::Storage;
+use qu_module::{Module, ModuleMap};
+use qu_source::Source;
 use std::{collections::HashMap, hash::Hash};
-
-pub mod module;
-pub mod source;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
-pub struct SourceId(pub usize);
 
 #[derive(Debug, Clone, Copy)]
 pub struct ModuleId(pub usize);
 
-#[derive(Debug, Clone)]
-pub struct Storage<K: Hash + Eq, V> {
-    map: HashMap<K, usize>,
-    pool: Vec<V>,
-}
-
 #[derive(Debug)]
 pub struct Context {
-    sources: Storage<String, source::Source>,
-    modules: Storage<String, module::Module>,
+    sources: qu_common::Storage<String, qu_source::Source>,
+    modules: ModuleMap,
 }
 
 impl Context {
@@ -29,14 +21,16 @@ impl Context {
         }
     }
 
-    pub fn source(&mut self, path: &str) -> Result<SourceId, std::io::Error> {
+    pub fn source(&mut self, path: &str) -> Result<qu_source::SourceId, std::io::Error> {
         let canon_path = std::fs::canonicalize(path)?.display().to_string();
         match self.sources.get_by_id_key(&canon_path) {
-            Some(source_id) => { return Ok(SourceId(source_id)) },
+            Some(source_id) => return Ok(qu_source::SourceId(source_id)),
             None => {
-                let new_source = source::Source::new(path.to_string())?;
-                Ok(SourceId(self.sources.put(path.to_string(), new_source)))
-            },
+                let new_source = Source::new(path.to_string())?;
+                Ok(qu_source::SourceId(
+                    self.sources.put(path.to_string(), new_source),
+                ))
+            }
         }
     }
 
@@ -44,66 +38,21 @@ impl Context {
         match self.modules.get_by_id_key(&name) {
             Some(id) => ModuleId(id),
             None => {
-                let new_mod = module::Module::new();
+                let new_mod = qu_module::Module::new();
                 ModuleId(self.modules.put(name, new_mod))
             }
         }
     }
 
-    pub fn get_source<'a>(&'a self, id: SourceId) -> Option<&'a String> {
+    pub fn get_source<'a>(&'a self, id: qu_source::SourceId) -> Option<&'a String> {
         self.sources.pool.get(id.0).map(|s| &s.content)
     }
 
-    pub fn get_source_file<'a>(&'a self, id: SourceId) -> Option<&'a source::Source> {
+    pub fn get_source_file<'a>(&'a self, id: qu_source::SourceId) -> Option<&'a qu_source::Source> {
         self.sources.pool.get(id.0)
     }
-}
 
-impl<K: Hash + Eq, V> Storage<K, V> {
-    pub fn new() -> Self {
-        Self {
-            map: HashMap::new(),
-            pool: Vec::new(),
-        }
-    }
-
-    pub fn get_by_id_key(&self, key: &K) -> Option<usize> {
-        self.map.get(&key).copied()
-    }
-
-    pub fn put(&mut self, key: K, value: V) -> usize {
-        match self.get_by_id_key(&key) {
-            Some(id) => {
-                self.pool.insert(id, value);
-                return id;
-            },
-            None => {
-                let new_id = self.pool.len();
-                self.pool.push(value);
-                return new_id;
-            }
-        }
-    }
-
-    pub fn map(&mut self, key: K, id: usize) -> Option<usize> {
-        self.map.insert(key, id)
-    }
-
-    pub fn get_from_key(&mut self, key: &K) -> Option<&V> {
-        let id = self.get_by_id_key(key)?;
-        self.pool.get(id)
-    }
-
-    pub fn get_from_key_mut(&mut self, key: &K) -> Option<&mut V> {
-        let id = self.get_by_id_key(key)?;
-        self.pool.get_mut(id)
-    }
-
-    pub fn get_pool(&self) -> &Vec<V> {
-        &self.pool
-    }
-
-    pub fn get_pool_mut(&mut self) -> &mut Vec<V> {
-        &mut self.pool
+    pub fn get_module(&mut self, id: ModuleId) -> Option<&mut Module> {
+        self.modules.get_pool_mut().get_mut(id.0)
     }
 }

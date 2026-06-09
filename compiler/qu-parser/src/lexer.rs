@@ -1,10 +1,14 @@
 use std::str::Chars;
 
 use qu_ast::stmt::UsePath::Pair;
-use qu_context::SourceId;
-use qu_diagnostics::{Diagnostic, span::Span};
+use qu_diagnostics::Diagnostic;
+use qu_source::SourceId;
+use qu_span::Span;
 
-use crate::{tok, token::{Literal, Operator, Separator, Token, TokenKind}};
+use crate::{
+    tok,
+    token::{Literal, Operator, Separator, Token, TokenKind},
+};
 
 #[derive(Debug)]
 pub struct Lexer<'source> {
@@ -89,7 +93,7 @@ impl<'a> Lexer<'a> {
             while self.cur().is_alphanumeric() || self.cur() == '_' {
                 self.next();
             }
-            
+
             let slice = &self.source[self.prev_index..self.index];
             let kind = match slice {
                 "fn" => tok!(kw crate::token::Keyword::Fn),
@@ -112,9 +116,9 @@ impl<'a> Lexer<'a> {
                 "false" => tok!(lt Literal::False),
                 _ => TokenKind::Identifier,
             };
-            
+
             return Ok(self.tok(kind));
-        }        
+        }
 
         // 4. Match Integer Literals
         if first_char.is_ascii_digit() {
@@ -125,41 +129,65 @@ impl<'a> Lexer<'a> {
         }
 
         // 5. Match Operators and Separators (ordered by length descending)
-        let kind = if self.eat("->") { tok!(sp Separator::Arrow) }
-        else if self.eat("|>") { tok!(op Operator::Pipe) }
-        else if self.eat("+=") { tok!(op Operator::AddAssign) }
-        else if self.eat("-=") { tok!(op Operator::SubAssign) }
-        else if self.eat("*=") { tok!(op Operator::MulAssign) }
-        else if self.eat("/=") { tok!(op Operator::DivAssign) }
-        else if self.eat(".")  { tok!(sp Separator::Dot) }
-        else if self.eat(";")  { tok!(sp Separator::SemiColon) }
-        else if self.eat(",")  { tok!(sp Separator::Comma) }
-        else if self.eat(":")  { tok!(sp Separator::Colon) }
-        else if self.eat("(")  { tok!(sp Separator::OpenParen) }
-        else if self.eat(")")  { tok!(sp Separator::CloseParen) }
-        else if self.eat("{")  { tok!(sp Separator::OpenBrace) }
-        else if self.eat("}")  { tok!(sp Separator::CloseBrace) }
-        else if self.eat("[")  { tok!(sp Separator::OpenBracket) }
-        else if self.eat("]")  { tok!(sp Separator::CloseBracket) }
-        else if self.eat("+")  { tok!(op Operator::Add) }
-        else if self.eat("-")  { tok!(op Operator::Minus) }
-        else if self.eat("*")  { tok!(op Operator::Star) }
-        else if self.eat("/")  { tok!(op Operator::Slash) }
-        else if self.eat("=")  { tok!(op Operator::Assign) }
-        else {
-            // Fallback for unexpected characters. 
+        let kind = if self.eat("->") {
+            tok!(sp Separator::Arrow)
+        } else if self.eat("|>") {
+            tok!(op Operator::Pipe)
+        } else if self.eat("+=") {
+            tok!(op Operator::AddAssign)
+        } else if self.eat("-=") {
+            tok!(op Operator::SubAssign)
+        } else if self.eat("*=") {
+            tok!(op Operator::MulAssign)
+        } else if self.eat("/=") {
+            tok!(op Operator::DivAssign)
+        } else if self.eat(".") {
+            tok!(sp Separator::Dot)
+        } else if self.eat(";") {
+            tok!(sp Separator::SemiColon)
+        } else if self.eat(",") {
+            tok!(sp Separator::Comma)
+        } else if self.eat(":") {
+            tok!(sp Separator::Colon)
+        } else if self.eat("(") {
+            tok!(sp Separator::OpenParen)
+        } else if self.eat(")") {
+            tok!(sp Separator::CloseParen)
+        } else if self.eat("{") {
+            tok!(sp Separator::OpenBrace)
+        } else if self.eat("}") {
+            tok!(sp Separator::CloseBrace)
+        } else if self.eat("[") {
+            tok!(sp Separator::OpenBracket)
+        } else if self.eat("]") {
+            tok!(sp Separator::CloseBracket)
+        } else if self.eat("+") {
+            tok!(op Operator::Add)
+        } else if self.eat("-") {
+            tok!(op Operator::Minus)
+        } else if self.eat("*") {
+            tok!(op Operator::Star)
+        } else if self.eat("/") {
+            tok!(op Operator::Slash)
+        } else if self.eat("=") {
+            tok!(op Operator::Assign)
+        } else {
+            // Fallback for unexpected characters.
             // Replace this with your custom miette Diagnostic error later!
             let invalid_char = self.next();
-            todo!("Handle unexpected character syntax error: '{}'", invalid_char);
+            todo!(
+                "Handle unexpected character syntax error: '{}'",
+                invalid_char
+            );
         };
 
         Ok(self.tok(kind))
     }
 
     fn tok(&self, kind: TokenKind) -> Token {
-        Token { 
-            kind, 
-            span: Span::new(self.prev_index, self.index, self.source_id) 
+        Token {
+            kind,
+            span: Span::new(self.prev_index, self.index, self.source_id),
         }
     }
 }

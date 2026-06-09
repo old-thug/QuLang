@@ -1,9 +1,9 @@
 use qu_ast::expr::{self, ExprRef};
+use qu_entities::type_layout as layout;
 
-use crate::extract;
+use qu_common::extract;
 
-use super::{TypeChecker, layout};
-
+use super::TypeChecker;
 
 impl<'a> TypeChecker<'a> {
     pub(super) fn check_expression(&mut self, expr: &ExprRef) -> Option<layout::TypeId> {
@@ -27,7 +27,11 @@ impl<'a> TypeChecker<'a> {
 
     pub(super) fn check_identifier(&mut self, expr: &ExprRef) -> Option<layout::TypeId> {
         extract!(expr.data(), expr::ExprData::Identifier(ident));
-        let symbol = self.symbols.get_from_key(&expr.span)?;
-        Some(symbol.resolved_type.expect(&format!("identifier `{ident}` is awaiting inference")))
+        let symbol = self.module.get_symbols_mut().get_from_key(&expr.span)?;
+        Some(
+            symbol
+                .resolved_type
+                .expect(&format!("identifier `{ident}` is awaiting inference")),
+        )
     }
 }

@@ -3,7 +3,8 @@ use qu_ast::{
     stmt::{FunctionDeclKind, FunctionParameter},
     type_hint::{Mutability, TypeRef},
 };
-use qu_diagnostics::{Diagnostic, Severity, span::Spanned};
+use qu_diagnostics::{Diagnostic, Severity};
+use qu_span::Spanned;
 
 use crate::{
     PResult,
@@ -178,14 +179,14 @@ pub(super) fn parse_function(
     ctx.eat([tok!(sp Separator::OpenBrace)])?;
     let body = parse_block_expr(ctx)?;
     Some(qu_ast::stmt::Stmt::new_function_definition(
-            fn_kw.span.cover(ctx.previous().span),
-            visibility.get().clone(),
-            mutability.get().clone(),
-            kind,
-            name_ident,
-            generics,
-            prototype,
-            Some(body),
+        fn_kw.span.cover(ctx.previous().span),
+        visibility.get().clone(),
+        mutability.get().clone(),
+        kind,
+        name_ident,
+        generics,
+        prototype,
+        Some(body),
     ))
 }
 
@@ -208,10 +209,14 @@ pub(super) fn parse_vardecl(
     } else {
         None
     };
-    ctx.eat_or_else(tok!(op Operator::Assign),|t| t, |this| {
-        this.skip_until(true, |t| t.is_sp(Separator::SemiColon));
-        None
-    })?;
+    ctx.eat_or_else(
+        tok!(op Operator::Assign),
+        |t| t,
+        |this| {
+            this.skip_until(true, |t| t.is_sp(Separator::SemiColon));
+            None
+        },
+    )?;
     let initializer = match parse_expression(ctx, Precedence::None) {
         Some(expr) => expr,
         None => {

@@ -1,56 +1,42 @@
 #![allow(unused)]
-mod check_stmt;
 mod check_expr;
+mod check_stmt;
 mod collect_stmt;
 mod error;
-mod scope;
-mod symbol;
 
 use qu_ast::Ast;
-use qu_context::Storage;
-use qu_diagnostics::{
-    Diagnostic,
-    span::{self, Span},
-};
-use scope::{Scope, ScopeFlag, ScopeId};
-use symbol::{Symbol, SymbolId};
+use qu_common::Storage;
+use qu_context::ModuleId;
+use qu_diagnostics::Diagnostic;
+use qu_entities::scope::{Scope, ScopeFlag, ScopeId, ScopeStorage};
+use qu_entities::symbol::{Symbol, SymbolId, SymbolStorage};
+use qu_module::Module;
+use qu_span::{Span, Spanned};
 
-pub type SymbolStorage = Storage<Span, Symbol>;
-pub type ScopeStorage = Storage<Span, Scope>;
-
-#[derive(Debug, Clone)]
-pub struct SymbolAnalyzer {
-    symbols: SymbolStorage,
-    scopes: ScopeStorage,
+#[derive(Debug)]
+pub struct SymbolAnalyzer<'a> {
     current_scope_id: ScopeId,
     diagnostics: Vec<Diagnostic>,
+    module: &'a mut Module,
 }
 
-impl SymbolAnalyzer {
-    pub fn new() -> SymbolAnalyzer {
-        let mut scopes = ScopeStorage::new();
-        // Append global scope
-        scopes
-            .get_pool_mut()
-            .push(Scope::new(None, scope::ScopeFlag::Global));
+impl<'a> SymbolAnalyzer<'a> {
+    pub fn new(module: &'a mut Module) -> Self {
         SymbolAnalyzer {
-            symbols: SymbolStorage::new(),
-            scopes,
             // Set current scope to global scope
             current_scope_id: ScopeId(0),
             diagnostics: Vec::new(),
+            module: module,
         }
     }
 
-    pub fn run(&mut self, ast: &Ast) -> Result<(SymbolStorage, ScopeStorage), Vec<Diagnostic>> {
+    pub fn run(&mut self, ast: &Ast) -> Result<(), Vec<Diagnostic>> {
         self.collect_top_level_symbols(ast);
         self.check_statements(ast);
         if self.diagnostics.len() != 0 {
             return Err(self.diagnostics.clone());
         } else {
-            let symbols = std::mem::replace(&mut self.symbols, SymbolStorage::new());
-            let scopes = std::mem::replace(&mut self.scopes, ScopeStorage::new());
-            Ok((symbols, scopes))
+            Ok(())
         }
     }
 
@@ -67,13 +53,13 @@ impl SymbolAnalyzer {
     pub(super) fn enter_new_scope(&mut self, flag: ScopeFlag) {
         let parent_id = self.current_scope_id;
         let new_scope = Scope::new(Some(parent_id), flag);
-        self.scopes.get_pool_mut().push(new_scope);
-        self.current_scope_id = ScopeId(self.scopes.get_pool().len() - 1);
+        self.module.get_scopes_mut().get_pool_mut().push(new_scope);
+        self.current_scope_id = ScopeId(self.module.get_scopes().get_pool().len() - 1);
     }
 
     pub(super) fn leave_scope(&mut self) {
         // Pop the last scope off the stack
-        match self.scopes.get_pool_mut().pop() {
+        match self.module.get_scopes_mut().get_pool_mut().pop() {
             Some(scope) => {
                 // Set current id to id of last scope's parent or the global scope.
                 self.current_scope_id = scope.parent.unwrap_or(ScopeId(0));
@@ -87,8 +73,8 @@ impl SymbolAnalyzer {
     }
 
     pub(super) fn get_new_symbol_id(&mut self, symbol: Symbol) -> SymbolId {
-        self.symbols.get_pool_mut().push(symbol);
-        SymbolId(self.symbols.get_pool().len() - 1)
+        self.module.get_symbols_mut().get_pool_mut().push(symbol);
+        SymbolId(self.module.get_symbols().get_pool().len() - 1)
     }
 
     pub(super) fn current_scope_id(&self) -> ScopeId {
@@ -96,33 +82,31 @@ impl SymbolAnalyzer {
     }
 
     pub(super) fn scope(&self, id: ScopeId) -> Option<&Scope> {
-        self.scopes.get_pool().get(id.0)
+        self.module.get_scopes().get_pool().get(id.0)
     }
 
     pub(super) fn scope_mut(&mut self, id: ScopeId) -> Option<&mut Scope> {
-        self.scopes.get_pool_mut().get_mut(id.0)
+        self.module.get_scopes_mut().get_pool_mut().get_mut(id.0)
     }
 
     pub(super) fn get_symbol(&mut self, id: SymbolId) -> Option<&Symbol> {
-        self.symbols.get_pool().get(id.0)
+        self.module.get_symbols().get_pool().get(id.0)
     }
 
     pub(super) fn get_symbol_mut(&mut self, id: SymbolId) -> Option<&mut Symbol> {
-        self.symbols.get_pool_mut().get_mut(id.0)
+        self.module.get_symbols_mut().get_pool_mut().get_mut(id.0)
     }
 
     pub(super) fn map_locus_to_symbol(&mut self, span: Span, id: SymbolId) {
-        self.symbols.map(span, id.0);
+        self.module.get_symbols_mut().map(span, id.0);
     }
 
     pub(super) fn map_locus_to_scope(&mut self, span: Span, id: ScopeId) {
-        self.scopes.map(span, id.0);
+        self.module.get_scopes_mut().map(span, id.0);
     }
 
     pub(super) fn get_symbol_id_from_name(&mut self, name: String) -> Option<SymbolId> {
-        self.find_id_in_scope_and(self.current_scope_id(), &name, |_, id| {
-            Some(id)
-        })
+        self.find_id_in_scope_and(self.current_scope_id(), &name, |_, id| Some(id))
     }
 
     pub(super) fn add_new_empty_symbol_to_scope(&mut self, name: qu_ast::Name, scope_id: ScopeId) {
@@ -155,7 +139,7 @@ impl SymbolAnalyzer {
     {
         let ptr = self as *mut Self;
         let symbol = unsafe { &mut (*ptr) }
-            .symbols
+            .module.get_symbols_mut()
             .get_pool_mut()
             .get_mut(id.0)?;
         //let symbol = self.symbols.get_pool_mut().get_mut(id.0)?;
@@ -167,7 +151,7 @@ impl SymbolAnalyzer {
     where
         F: FnOnce(&mut Self, SymbolId) -> Option<U>,
     {
-        let scope = self.scopes.get_pool_mut().get(id.0)?;
+        let scope = self.module.get_scopes_mut().get_pool_mut().get(id.0)?;
         match scope.find(name) {
             Some(sym) => {
                 return f(self, sym);
@@ -178,22 +162,25 @@ impl SymbolAnalyzer {
                 } else {
                     None
                 }
-            },
+            }
         }
     }
 
-    pub(super) fn find_id_in_scope_shallow_and<F, U>(&mut self, id: ScopeId, name: &str, f: F) -> Option<U>
+    pub(super) fn find_id_in_scope_shallow_and<F, U>(
+        &mut self,
+        id: ScopeId,
+        name: &str,
+        f: F,
+    ) -> Option<U>
     where
         F: FnOnce(&mut Self, SymbolId) -> Option<U>,
     {
-        let scope = self.scopes.get_pool_mut().get(id.0)?;
+        let scope = self.module.get_scopes_mut().get_pool_mut().get(id.0)?;
         match scope.find(name) {
             Some(sym) => {
                 return f(self, sym);
             }
-            None => {
-                None
-            },
+            None => None,
         }
     }
 }

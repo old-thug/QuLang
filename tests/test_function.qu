@@ -1,7 +1,14 @@
 
 fn foobar(a: i32) -> i32 { return a; }
 
+fn main(argc: i32, argv: *string) -> i32 {
+    return argc;
+}
+
 fn add(a: i32, b: string) -> i32  {
-   let a = b;
-   let b : string = a;
+   let x = 300;
+   let xx = 1000;
+   let xxx = 30303;
+   let b = 0;
+   return a;
 }

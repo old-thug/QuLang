@@ -4,8 +4,8 @@ mod handle_type;
 mod parse_state;
 
 use qu_ast::Ast;
-use qu_context::SourceId;
 use qu_diagnostics::Diagnostic;
+use qu_source::SourceId;
 
 use crate::{
     lexer::Lexer,

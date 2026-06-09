@@ -6,4 +6,8 @@ edition = "2024"
 [dependencies]
 qu-ast = { path = "../qu-ast/" } 
 qu-context = { path = "../qu-context/" }
+qu-common  = { path = "../qu-common/" }
 qu-diagnostics = { path = "../qu-diagnostics/" }
+qu-span     = { path = "../qu-span/" }
+qu-entities = { path = "../qu-entities/" }
+qu-module = { path = "../qu-module/" }

@@ -1,6 +1,11 @@
-use qu_diagnostics::span::Span;
+use qu_span::Span;
 
-use crate::{Name, Visibility, expr::{self, ExprRef}, generics::Generics, type_hint::{Mutability, TypeRef}};
+use crate::{
+    Name, Visibility,
+    expr::{self, ExprRef},
+    generics::Generics,
+    type_hint::{Mutability, TypeRef},
+};
 
 #[derive(Debug, Clone)]
 pub struct Stmt {
@@ -82,7 +87,7 @@ pub enum UsePath {
 
 #[derive(Debug, Clone)]
 pub struct UseDecl {
-    path: UsePath
+    path: UsePath,
 }
 
 #[derive(Debug, Clone)]
@@ -103,7 +108,6 @@ impl Stmt {
     pub fn data(&self) -> &StmtData {
         &self.data
     }
-
 
     pub fn is_expr(&self) -> bool {
         matches!(self.data, StmtData::Expr(_))
@@ -134,7 +138,18 @@ impl Stmt {
         prototype: FunctionPrototype,
         body: Option<ExprRef>,
     ) -> StmtRef {
-        Self::new(span, StmtData::FunctionDefinition(FunctionDefinition { visibility, mutability, kind, name, generics, prototype, body }))
+        Self::new(
+            span,
+            StmtData::FunctionDefinition(FunctionDefinition {
+                visibility,
+                mutability,
+                kind,
+                name,
+                generics,
+                prototype,
+                body,
+            }),
+        )
     }
 
     pub fn new_variable_decl(
@@ -144,7 +159,15 @@ impl Stmt {
         type_hint: Option<TypeRef>,
         initializer: ExprRef,
     ) -> StmtRef {
-        Self::new(span, StmtData::VariableDecl(VariableDecl { mutability, name, type_hint, initializer }))
+        Self::new(
+            span,
+            StmtData::VariableDecl(VariableDecl {
+                mutability,
+                name,
+                type_hint,
+                initializer,
+            }),
+        )
     }
 
     pub fn new_module_spec(span: Span, name: Name) -> StmtRef {
@@ -155,13 +178,30 @@ impl Stmt {
         Self::new(span, StmtData::UseDecl(UseDecl { path }))
     }
 
-    pub fn new_type_definition(span: Span, name: Name, is_distinct: bool, is_opaque: bool, value: TypeRef) -> StmtRef {
-        Self::new(span, StmtData::TypeDefinition(TypeDefinition { name, is_distinct, is_opaque, value }))
+    pub fn new_type_definition(
+        span: Span,
+        name: Name,
+        is_distinct: bool,
+        is_opaque: bool,
+        value: TypeRef,
+    ) -> StmtRef {
+        Self::new(
+            span,
+            StmtData::TypeDefinition(TypeDefinition {
+                name,
+                is_distinct,
+                is_opaque,
+                value,
+            }),
+        )
     }
 }
 
 impl FunctionPrototype {
     pub fn new(parameters: Vec<FunctionParameter>, return_type: Option<TypeRef>) -> Self {
-        Self { parameters, return_type }
+        Self {
+            parameters,
+            return_type,
+        }
     }
 }

@@ -1,11 +1,7 @@
-use std::{fmt::Display as FD};
+use qu_span::Span;
+use std::fmt::Display as FD;
 
-use crate::span::Span;
-pub mod span;
-
-use miette::{
-    Diagnostic as MietteDiagnostic, LabeledSpan, NamedSource, Report, SourceSpan,
-};
+use miette::{Diagnostic as MietteDiagnostic, LabeledSpan, NamedSource, Report, SourceSpan};
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy)]
@@ -15,7 +11,7 @@ pub enum Severity {
     Note,
 }
 
-impl FD /* fmt::Display */ for Severity {
+impl FD for Severity {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Severity::Error => write!(f, "error"),
@@ -114,17 +110,20 @@ impl Diagnostic {
     }
 
     pub fn with_label(mut self, label: String, span: Span) -> Self {
-        self.labels.push(Label { label , span, is_primary: false});
+        self.labels.push(Label {
+            label,
+            span,
+            is_primary: false,
+        });
         self
     }
 
     pub fn into_report(self, ctx: &qu_context::Context) -> Report {
         let source_code = ctx.get_source_file(self.labels[0].span.source_id).unwrap();
         let report = Report::new(self);
-        report
-            .with_source_code(NamedSource::new(
-                source_code.path.clone(),
-                source_code.content.clone(),
-            ))
+        report.with_source_code(NamedSource::new(
+            source_code.path.clone(),
+            source_code.content.clone(),
+        ))
     }
 }

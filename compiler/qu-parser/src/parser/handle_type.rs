@@ -1,7 +1,11 @@
-use qu_ast::{type_hint::{IntegerWidth, Type, TypeData, TypeRef}};
+use qu_ast::type_hint::{IntegerWidth, Type, TypeData, TypeRef};
 
-use crate::{PResult, parse_context::ParseContext, tok, token::{Keyword, Operator, TokenKind}};
-
+use crate::{
+    PResult,
+    parse_context::ParseContext,
+    tok,
+    token::{Keyword, Operator, TokenKind},
+};
 
 pub(super) enum TypeContext {
     Parameter,
@@ -9,10 +13,7 @@ pub(super) enum TypeContext {
     Variable,
 }
 
-pub(super) fn parse_type_hint(
-    ctx: &mut ParseContext,
-    context: TypeContext,
-) -> PResult<TypeRef> {
+pub(super) fn parse_type_hint(ctx: &mut ParseContext, context: TypeContext) -> PResult<TypeRef> {
     let begin = ctx.current();
     let mutability = if ctx.try_eat(tok!(kw Keyword::Mut))? {
         qu_ast::type_hint::Mutability::Mutable
@@ -27,6 +28,7 @@ pub(super) fn parse_type_hint(
         tok!(kw Keyword::Fn) => todo!("parse-function-sig"),
         // pointer-type: '*', type;
         TokenKind::Operator(Operator::Star) => {
+            ctx.next()?;
             let inner = parse_type_hint(ctx, TypeContext::Parameter)?;
             TypeData::Pointer(inner)
         }
@@ -52,8 +54,12 @@ pub(super) fn parse_type_hint(
                 _ => TypeData::Named(qu_ast::Name { span, value: name }),
             }
         }
-        _ => todo!()
+        _ => todo!(),
     };
 
-    Some(Type::new(begin.span.cover(ctx.previous().span), data, mutability))
+    Some(Type::new(
+        begin.span.cover(ctx.previous().span),
+        data,
+        mutability,
+    ))
 }

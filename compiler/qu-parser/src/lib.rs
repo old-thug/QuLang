@@ -1,7 +1,7 @@
 #![allow(unused)]
 pub mod lexer;
+mod parse_context;
 pub mod parser;
 pub mod token;
-mod parse_context;
 
 pub use parser::*;

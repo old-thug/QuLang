@@ -1,9 +1,7 @@
 use qu_ast::{Visibility, type_hint::Mutability};
-use qu_context::SourceId;
-use qu_diagnostics::{
-    Diagnostic, Severity,
-    span::{Span, Spanned},
-};
+use qu_diagnostics::{Diagnostic, Severity};
+use qu_source::SourceId;
+use qu_span::{Span, Spanned};
 
 use crate::{
     PResult, Parser, tok,

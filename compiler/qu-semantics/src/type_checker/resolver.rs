@@ -1,8 +1,8 @@
 use qu_ast::type_hint::{self, IntegerWidth, TypeRef};
+use qu_entities::layout::{self, TypeKind, TypeLayout};
+use qu_common::extract;
 
-use crate::extract;
-
-use super::{TypeChecker, layout::{self, TypeKind, TypeLayout}};
+use super::TypeChecker;
 
 impl<'a> TypeChecker<'a> {
     pub(super) const TYPEID_CHAR: layout::TypeId = layout::TypeId(0);
@@ -20,7 +20,6 @@ impl<'a> TypeChecker<'a> {
     pub(super) const TYPEID_F64: layout::TypeId = layout::TypeId(12);
     /// KEEP This as the last TypeId
     pub(super) const TYPEID_VOID: layout::TypeId = layout::TypeId(13);
-
 
     pub(super) fn register_builtin_types(&mut self) {
         let builtins = [
@@ -40,7 +39,7 @@ impl<'a> TypeChecker<'a> {
             (Self::TYPEID_VOID.0, TypeKind::Void),
         ];
 
-        let pool = self.types.get_pool_mut();
+        let pool = self.module.get_types_mut().get_pool_mut();
         pool.reserve(Self::TYPEID_VOID.0 + 1);
 
         for (id, kind) in builtins {
@@ -51,7 +50,7 @@ impl<'a> TypeChecker<'a> {
     pub(super) fn get_pointer_type_id(&mut self, type_hint: &TypeRef) -> layout::TypeId {
         extract!(type_hint.data, type_hint::TypeData::Pointer(ref inner));
         let inner_type_id = self.resolve_type_to_id(&inner);
-        if let Some((id, _)) = self.types.get_pool().iter().enumerate().find(|(_, t)| {
+        if let Some((id, _)) = self.module.get_types().get_pool().iter().enumerate().find(|(_, t)| {
             if matches!(&t.kind, TypeKind::Pointer(inner_type_id)) {
                 return true;
             }
@@ -60,8 +59,10 @@ impl<'a> TypeChecker<'a> {
             return layout::TypeId(id);
         }
 
-        let new_id = self.types.get_pool().len();
-        self.types.get_pool_mut().push(TypeLayout::new(TypeKind::Pointer(inner_type_id), None));
+        let new_id = self.module.get_types().get_pool().len();
+        self.module.get_types_mut()
+            .get_pool_mut()
+            .push(TypeLayout::new(TypeKind::Pointer(inner_type_id), None));
         layout::TypeId(new_id)
     }
 

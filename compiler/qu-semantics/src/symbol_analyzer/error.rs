@@ -1,5 +1,6 @@
 use qu_ast::Name;
-use qu_diagnostics::{Diagnostic, Severity, span::Span};
+use qu_diagnostics::{Diagnostic, Severity};
+use qu_span::Span;
 
 use super::SymbolAnalyzer;
 
