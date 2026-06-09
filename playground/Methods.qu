@@ -1,0 +1,19 @@
+
+type Person = {
+    name: string;
+    age: usize;
+};
+
+pub fn Person.new(name: string, age: usize) -> Person {
+    return .{
+        .name = name,
+        .age  = age,
+    };
+}
+
+pub fn Person.greet(this: &const Person, other: &const Person) {}
+
+fn main() {
+    let p1 = Person.new("soncci", 20);
+    let p2 = Person.new("old-thug", 18);
+}

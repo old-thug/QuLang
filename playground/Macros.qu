@@ -1,0 +1,32 @@
+
+// Proposition:
+//    Macros are functions that are precompiled then loaded at compile time.
+//    similar to rust's [proc macro].
+//
+//    A macro's signature is specific
+//        fn(RawTokenStream) -> Result[RawTokenStream, RawDiagnostics];
+//
+//    A macro takes in a stream of tokens, processes it. and returns a new stream
+//    which is then inserted at compile time.
+
+type MacroResult = Result[RawTokenStream, RawDiagnostics];
+
+fn print_one(ts: RawTokenStream) -> MacroResult {
+   mut let diags = RawDiagnostics.new();
+   mut let result = RawTokenStream.new();
+
+   let arg = if RawTokenStream.next(&ts) is {
+       .Ok(token) if token |> Token.is_string => {
+          token
+       },
+       .None => {
+             diags |> RawDiagnostics.push(/[ Your error Here /]);
+             return .Err(diags);
+       },
+   };
+
+   .Ok(result
+        |> RawTokenStream.push_get(RawToken.from_str("print_string(&"))
+        |> RawTokenStream.push_get(RawToken.from_token(token))
+        |>  RawTokenStream.push_get(RawToken.from_str(");")))
+}
