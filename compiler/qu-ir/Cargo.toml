@@ -4,3 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+qu-ast      = { path = "../qu-ast/" }
+qu-common   = { path = "../qu-common/" }
+qu-context  = { path = "../qu-context/" }
+qu-entities = { path = "../qu-entities/" }
+qu-module   = { path = "../qu-module/" }
+qu-diagnostics = { path = "../qu-diagnostics/" }
