@@ -30,7 +30,7 @@ impl<'a, 'b> ParseContext<'a, 'b> {
     }
 
     pub(super) fn current(&self) -> Token {
-        self.parser.current_token
+        self.parser.ts.peek()
     }
 
     pub(super) fn current_kind(&self) -> TokenKind {
@@ -42,7 +42,7 @@ impl<'a, 'b> ParseContext<'a, 'b> {
     }
 
     pub(super) fn previous(&self) -> Token {
-        self.parser.previous_token
+        self.parser.ts.peek_nth(-1)
     }
 
     pub(super) fn equals(&self, kind: TokenKind) -> bool {
@@ -104,14 +104,14 @@ impl<'a, 'b> ParseContext<'a, 'b> {
     pub(super) fn try_eat_many(
         &mut self,
         kinds: impl IntoIterator<Item = TokenKind> + Clone,
-    ) -> PResult<Option<Token>> {
+    ) -> Option<Token> {
         for kind in kinds {
             if self.current().kind == kind {
-                self.next()?;
-                return Some(Some(self.previous()));
+                self.next();
+                return Some(self.previous());
             }
         }
-        Some(None)
+        None
     }
 
     pub(super) fn eat_or_else<F, M, U>(
@@ -131,56 +131,48 @@ impl<'a, 'b> ParseContext<'a, 'b> {
         }
     }
 
-    pub(super) fn try_eat(&mut self, kind: TokenKind) -> PResult<bool> {
+    pub(super) fn try_eat(&mut self, kind: TokenKind) -> bool {
         if self.current().kind == kind {
-            self.next()?;
-            return Some(true);
+            self.next();
+            return true;
         }
-        Some(false)
+        false
     }
 
     pub(super) fn skip_to(
         &mut self,
         eat: bool,
         kinds: impl IntoIterator<Item = TokenKind> + Clone,
-    ) -> PResult<bool> {
+    ) -> bool {
         while !self.is_done() {
             for kind in kinds.clone() {
                 if self.equals(kind) {
                     if eat {
-                        self.next()?;
+                        self.next();
                     }
-                    return Some(true);
+                    return true;
                 }
             }
-            self.next()?;
+            self.next();
         }
-        Some(false)
+        false
     }
 
-    pub(super) fn skip_until<F>(&mut self, eat: bool, f: F) -> PResult<()>
+    pub(super) fn skip_until<F>(&mut self, eat: bool, f: F)
     where
         F: Fn(&Token) -> bool,
     {
         while !self.is_done() && !f(&self.current()) {
-            self.next()?;
+            self.next();
         }
 
         if !self.is_done() && eat {
-            self.next()?;
+            self.next();
         }
-
-        Some(())
     }
 
-    pub(super) fn next(&mut self) -> PResult<Token> {
-        match self.parser.next() {
-            Ok(tok) => Some(tok),
-            Err(diag) => {
-                self.emit(diag);
-                self.next()
-            }
-        }
+    pub(super) fn next(&mut self) -> Token {
+        self.parser.next()
     }
 
     pub(super) fn eat_tok_and<F, U>(&mut self, kind: TokenKind, mut f: F) -> PResult<U>
@@ -196,9 +188,9 @@ impl<'a, 'b> ParseContext<'a, 'b> {
         &mut self,
     ) -> PResult<(Spanned<Visibility>, Spanned<Mutability>)> {
         // 1. Parse Visibility
-        let visibility = if let Some(token) = self.try_eat_many([tok!(kw Keyword::Pub)])? {
+        let visibility = if let Some(token) = self.try_eat_many([tok!(kw Keyword::Pub)]) {
             Spanned::new(Visibility::Public, token.span)
-        } else if let Some(token) = self.try_eat_many([tok!(kw Keyword::Shared)])? {
+        } else if let Some(token) = self.try_eat_many([tok!(kw Keyword::Shared)]) {
             // Note: Used `try_eat` here since it's a single token, matching your keyword array pattern
             Spanned::new(Visibility::Shared, token.span)
         } else {
@@ -210,7 +202,7 @@ impl<'a, 'b> ParseContext<'a, 'b> {
 
         // 2. Parse Mutability
         let mutability =
-            match self.try_eat_many([tok!(kw Keyword::Const), tok!(kw Keyword::Mut)])? {
+            match self.try_eat_many([tok!(kw Keyword::Const), tok!(kw Keyword::Mut)]) {
                 Some(token) => match token.kind {
                     tok!(kw Keyword::Const) => Spanned::new(Mutability::Immutable, token.span),
                     tok!(kw Keyword::Mut) => Spanned::new(Mutability::Mutable, token.span),

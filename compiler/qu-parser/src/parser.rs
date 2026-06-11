@@ -12,35 +12,28 @@ use crate::{
     parse_context::ParseContext,
     parser::handle_stmt::parse_statement,
     tok,
-    token::{Keyword, Token},
+    token::{Keyword, Token}, token_stream::TokenStream,
 };
 
 pub type PResult<T> = Option<T>;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
-    pub(super) lexer: Lexer<'a>,
-    pub(super) current_token: Token,
-    pub(super) previous_token: Token,
+    pub(super) ts: TokenStream,
     pub(super) source: &'a str,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(source: &'a str, source_id: SourceId) -> Self {
+    pub fn new(source: &'a str, ts: TokenStream) -> Self {
         let mut parser = Self {
-            lexer: Lexer::new(source, source_id),
-            current_token: Token::default(),
-            previous_token: Token::default(),
+            ts,
             source,
         };
-        parser.next().unwrap_or_else(|_| panic!());
         parser
     }
 
-    pub fn next(&mut self) -> Result<Token, Diagnostic> {
-        self.previous_token = self.current_token;
-        self.current_token = self.lexer.next_token()?;
-        Ok(self.previous_token)
+    pub fn next(&mut self) -> Token {
+        self.ts.next()
     }
 
     pub fn parse(&mut self) -> Result<Ast, Vec<Diagnostic>> {
@@ -61,12 +54,10 @@ impl<'a> Parser<'a> {
                             tok!(kw Keyword::Use),
                             tok!(kw Keyword::Extern),
                         ],
-                    )
-                    .unwrap();
+                    );
                 }
             }
         }
-
         if ctx.diagnostics.len() != 0 {
             return Err(ctx.diagnostics);
         } else {

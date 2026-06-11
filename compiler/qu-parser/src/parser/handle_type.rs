@@ -15,10 +15,10 @@ pub(super) enum TypeContext {
 
 pub(super) fn parse_type_hint(ctx: &mut ParseContext, context: TypeContext) -> PResult<TypeRef> {
     let begin = ctx.current();
-    let mutability = if ctx.try_eat(tok!(kw Keyword::Mut))? {
+    let mutability = if ctx.try_eat(tok!(kw Keyword::Mut)) {
         qu_ast::type_hint::Mutability::Mutable
     } else {
-        ctx.try_eat(tok!(kw Keyword::Const))?;
+        ctx.try_eat(tok!(kw Keyword::Const));
         qu_ast::type_hint::Mutability::Immutable
     };
 
@@ -28,14 +28,14 @@ pub(super) fn parse_type_hint(ctx: &mut ParseContext, context: TypeContext) -> P
         tok!(kw Keyword::Fn) => todo!("parse-function-sig"),
         // pointer-type: '*', type;
         TokenKind::Operator(Operator::Star) => {
-            ctx.next()?;
+            ctx.next();
             let inner = parse_type_hint(ctx, TypeContext::Parameter)?;
             TypeData::Pointer(inner)
         }
         TokenKind::Identifier => {
             let span = ctx.current().span;
             let name = ctx.slice(span);
-            ctx.next()?;
+            ctx.next();
             match name.as_str() {
                 "u8" => TypeData::UnsignedInteger(IntegerWidth::Int8),
                 "u16" => TypeData::UnsignedInteger(IntegerWidth::Int16),

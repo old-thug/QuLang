@@ -25,6 +25,7 @@ impl<'a> SymbolAnalyzer<'a> {
             stmt::StmtData::FunctionDefinition(_) => self.check_function(stmt),
             stmt::StmtData::VariableDecl(_) => self.check_vardecl(stmt),
             stmt::StmtData::Return(_) => self.check_return(stmt),
+            stmt::StmtData::Expr(expr) => self.check_expression(expr),
             _ => todo!("{:?}", stmt.data()),
         }
     }

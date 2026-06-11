@@ -3,9 +3,12 @@ fn foobar(ab: i32) -> i32 { return ab; }
 
 fn main(argc: i32, argv: *string) -> i32 {
     let y = add(b = 0, a = 12);
-    return argc;
+    printf(y);
+    return 0;
 }
 
 fn add(a: i32, b: i32) -> i32  {
    return a + b;
 }
+
+fn printf(x: i32) -> void {}

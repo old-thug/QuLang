@@ -118,6 +118,17 @@ impl<'a> Cgenerator<'a> {
                 }
                 self.write_def(format!(");\n"));
             },
+            InstructionKind::Binop { op, lhs, rhs } => {
+                self.write_def(
+                    format!(
+                        "    {} = {} {} {};\n",
+                        self.write_value(target.unwrap()),
+                        self.write_value(*lhs),
+                        op,
+                        self.write_value(*rhs),
+                    )
+                );
+            },
             _ => todo!("{:?}", instruction.1),
         }
     }
@@ -138,7 +149,7 @@ impl<'a> Cgenerator<'a> {
             },
             Value::True => format!("true"),
             Value::False => format!("false"),
-            Value::Unit => format!(""),
+            Value::Unit => format!("(_unit){{}}"),
             _ => todo!(),
         }
     }

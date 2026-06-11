@@ -18,6 +18,7 @@ impl<'a> SymbolAnalyzer<'a> {
             expr::ExprData::Integer(_) => Some(()),
             expr::ExprData::Call(_) => self.check_call(expr),
             expr::ExprData::BinaryOperation(_) => self.check_binop(expr),
+            expr::ExprData::Unit => Some(()),
             _ => todo!("{:?}", expr.data()),
         }
     }

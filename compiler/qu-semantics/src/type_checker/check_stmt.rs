@@ -20,6 +20,10 @@ impl<'a> TypeChecker<'a> {
             stmt::StmtData::FunctionDefinition(_) => self.check_function(stmt),
             stmt::StmtData::Return(_) => self.check_return(stmt),
             stmt::StmtData::VariableDecl(_) => self.check_vardecl(stmt),
+            stmt::StmtData::Expr(expr) => {
+                self.check_expression(expr)?;
+                Some(())
+            }
             _ => todo!("{:?}", stmt.data()),
         }
     }

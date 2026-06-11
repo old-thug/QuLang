@@ -28,7 +28,8 @@ pub enum ExprData {
     Yeild(ExprRef),
     BinaryOperation(BinaryOperation),
     UnaryOperation(UnaryOperation),
-    Tuple(ExprRef),
+    Tuple(Vec<ExprRef>),
+    Unit,                       // Empty Tuple. ()
 }
 
 #[derive(Debug, Clone)]
@@ -118,6 +119,10 @@ impl Expr {
         Box::new(Expr { span, data })
     }
 
+    pub fn new_tuple(span: Span, members: Vec<ExprRef>) -> ExprRef {
+        Self::new(span, ExprData::Tuple(members))
+    }
+
     pub fn new_binary(
         span: Span,
         left: ExprRef,
@@ -157,6 +162,20 @@ impl Expr {
         match self.data() {
             ExprData::Identifier(_) => true,
             _ => false,
+        }
+    }
+}
+
+impl std::fmt::Display for BinaryOperator {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BinaryOperator::Add => write!(f, "+"),
+            BinaryOperator::Sub => write!(f, "-"),
+            BinaryOperator::Mul => write!(f, "*"),
+            BinaryOperator::Div => write!(f, "/"),
+            BinaryOperator::GreaterThan => write!(f, ">"),
+            BinaryOperator::LessThan => write!(f, "<"),
+            _ => todo!(),
         }
     }
 }

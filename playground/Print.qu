@@ -1,0 +1,24 @@
+
+type Config = {};
+
+fn get_default_config() -> Config {}
+
+pub fn perform_magic(
+    magic_word: string,
+    config = get_default_config()
+) {
+}
+
+pub fn print(
+    fmt: string,
+    end = "\n",
+    args: []string = .{}
+) -> void {
+    ...
+}
+
+pub fn print_many_strings(...args: string) {
+    for arg in args {
+        print_string(arg);
+    }
+}

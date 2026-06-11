@@ -32,7 +32,7 @@ pub(super) fn parse_statement(ctx: &mut ParseContext) -> PResult<qu_ast::stmt::S
 }
 
 fn parse_name_(ctx: &mut ParseContext, err: String) -> PResult<qu_ast::Name> {
-    match ctx.try_eat_many([TokenKind::Identifier])? {
+    match ctx.try_eat_many([TokenKind::Identifier]) {
         Some(tok) => {
             return Some(qu_ast::Name {
                 span: tok.span,
@@ -52,7 +52,7 @@ fn parse_name_(ctx: &mut ParseContext, err: String) -> PResult<qu_ast::Name> {
 }
 
 pub(super) fn parse_name(ctx: &mut ParseContext, after: TokenKind) -> PResult<qu_ast::Name> {
-    match ctx.try_eat_many([TokenKind::Identifier])? {
+    match ctx.try_eat_many([TokenKind::Identifier]) {
         Some(tok) => {
             return Some(qu_ast::Name {
                 span: tok.span,
@@ -79,18 +79,18 @@ pub(super) fn parse_function_sig(
     ctx.eat([tok!(sp Separator::OpenParen)])?;
 
     while !ctx.is_sp(Separator::CloseParen) {
-        let takes_ownership = ctx.try_eat(tok!(kw Keyword::Move))?;
+        let takes_ownership = ctx.try_eat(tok!(kw Keyword::Move));
         let name = parse_name_(ctx, "expected parameter name".to_string())?;
 
         // 1. Optional Type Hint: If we can eat a `:`, parse the type
-        let type_hint = if ctx.try_eat(tok!(sp Separator::Colon))? {
+        let type_hint = if ctx.try_eat(tok!(sp Separator::Colon)) {
             Some(parse_type_hint(ctx, TypeContext::Parameter)?)
         } else {
             None
         };
 
         // 2. Optional Default Value: If we can eat a `=`, parse the expression
-        let default_value = if ctx.try_eat(tok!(op Operator::Assign))? {
+        let default_value = if ctx.try_eat(tok!(op Operator::Assign)) {
             Some(parse_expression(ctx, Precedence::None)?)
         } else {
             None
@@ -105,7 +105,7 @@ pub(super) fn parse_function_sig(
 
         // Parameters must be comma-separated. If there's no trailing comma,
         // we break and expect the closing parenthesis next.
-        if !ctx.try_eat(tok!(sp Separator::Comma))? {
+        if !ctx.try_eat(tok!(sp Separator::Comma)) {
             break;
         }
     }
@@ -114,7 +114,7 @@ pub(super) fn parse_function_sig(
     ctx.eat([tok!(sp Separator::CloseParen)])?;
 
     // 3. Optional Return Type: If we see `->`, parse the return type
-    let return_type = if ctx.try_eat(tok!(sp Separator::Arrow))? {
+    let return_type = if ctx.try_eat(tok!(sp Separator::Arrow)) {
         Some(parse_type_hint(ctx, TypeContext::Return)?)
     } else {
         None
@@ -131,7 +131,7 @@ pub(super) fn parse_generics(
     tok: TokenKind,
 ) -> PResult<qu_ast::generics::Generics> {
     let generics = qu_ast::generics::Generics::new();
-    if ctx.try_eat(tok!(sp Separator::OpenBracket))? {
+    if ctx.try_eat(tok!(sp Separator::OpenBracket)) {
         todo!();
         // while !ctx.equals(tok!(sp Separator::CloseBracket)) {
         //     let param_name = parse_name(ctx, tok)?;
@@ -161,7 +161,7 @@ pub(super) fn parse_function(
             ctx.current().span,
             format!("expected function body"),
         ));
-        ctx.skip_until(true, |t| t.is_sp(Separator::OpenBrace))?;
+        ctx.skip_until(true, |t| t.is_sp(Separator::OpenBrace));
     }
 
     if matches!(mutability.get(), Mutability::Mutable) {
@@ -204,7 +204,7 @@ pub(super) fn parse_vardecl(
 ) -> PResult<qu_ast::stmt::StmtRef> {
     let let_kw = ctx.eat([tok!(kw Keyword::Let)])?;
     let name = parse_name(ctx, let_kw.kind)?;
-    let type_hint = if ctx.try_eat(tok!(sp Separator::Colon))? {
+    let type_hint = if ctx.try_eat(tok!(sp Separator::Colon)) {
         Some(parse_type_hint(ctx, TypeContext::Variable)?)
     } else {
         None
@@ -220,7 +220,7 @@ pub(super) fn parse_vardecl(
     let initializer = match parse_expression(ctx, Precedence::None) {
         Some(expr) => expr,
         None => {
-            ctx.skip_until(true, |t| t.is_sp(Separator::SemiColon))?;
+            ctx.skip_until(true, |t| t.is_sp(Separator::SemiColon));
             return None;
         }
     };

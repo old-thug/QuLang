@@ -17,6 +17,7 @@ impl<'a> IrLowerer<'a> {
             },
             ExprData::Call(_) => self.lower_call(expr, builder),
             ExprData::BinaryOperation(_) => self.lower_binop(expr, builder),
+            ExprData::Unit => Some(builder.create_void()),
             _ => todo!("{:?}", expr.data()),
         }
     }

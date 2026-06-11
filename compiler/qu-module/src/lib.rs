@@ -7,6 +7,7 @@ pub type ModuleMap = qu_common::Storage<String, Module>;
 
 #[derive(Debug)]
 pub struct Module {
+    // Not yet used
     exports: Vec<SymbolId>,
     symbols: SymbolStorage,
     scopes: ScopeStorage,

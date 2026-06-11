@@ -1,0 +1,9 @@
+
+
+pub fn foobar() {
+    return ();
+}
+
+pub fn main() -> i32 {
+    return 0;
+}

@@ -12,7 +12,12 @@ impl<'a> IrLowerer<'a> {
             StmtData::FunctionDefinition(_) => self.lower_function(stmt, builder, is_global),
             StmtData::VariableDecl(_) => self.lower_vardecl(stmt, builder, is_global),
             StmtData::Return(_) => self.lower_return(stmt, builder, is_global),
-            _ => todo!("{:?}", stmt.data()),
+            StmtData::Expr(expr) => {
+                self.lower_expression(expr, builder)?;
+                Some(())
+            }
+            _ =>
+                todo!("{:?}", stmt.data()),
         }
     }
 

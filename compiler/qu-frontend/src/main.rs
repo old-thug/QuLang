@@ -1,7 +1,11 @@
+#![allow(unused)]
+use std::str::FromStr;
+
 #[allow(unused)]
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use qu_backend::BackendGenerator;
 use qu_context::Context;
+use qu_parser::token_stream::TokenStream;
 use qu_semantics::{symbol_analyzer::SymbolAnalyzer, type_checker::TypeChecker};
 
 #[derive(clap::Parser)]
@@ -14,6 +18,37 @@ struct Command {
     input_path: String,
     #[arg(short, value_name = "FILE", default_value("a.out"))]
     output_path: String,
+
+    #[arg(short, default_value("exe"))]
+    target: Target,
+}
+
+#[derive(Clone, Default)]
+enum Target {
+    #[default]
+    Executable,
+    Ccode,
+}
+
+impl Target {
+    pub fn to_backend_target(self) -> qu_backend::TargetKind {
+        match self {
+            Target::Executable => qu_backend::TargetKind::Executable,
+            Target::Ccode      => qu_backend::TargetKind::Ccode,
+        }
+    }
+}
+
+impl FromStr for Target {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "c-code" => Ok(Self::Ccode),
+            "exe"    => Ok(Self::Executable),
+            _ => Err(format!("`{}` is not a valid target", s))
+        }
+    }
+
+   type Err = String;
 }
 
 fn run() -> Result<(), String> {
@@ -28,7 +63,14 @@ fn run() -> Result<(), String> {
         let source = context
             .get_source(source_id)
             .ok_or("failed to get source".to_string())?;
-        let mut parser = qu_parser::Parser::new(source, source_id);
+        let ts = TokenStream::new(source, source_id)
+            .inspect_err(|diags| {
+                let count = diags.len();
+                for diag in diags {
+                    println!("{:?}", diag.clone().into_report(&context));
+                }
+            }).map_err(|diags| format!("compilation failed with {} errors", diags.len()))?;
+        let mut parser = qu_parser::Parser::new(source, ts);
         match parser.parse() {
             Ok(ast) => ast,
             Err(diags) => {
@@ -76,7 +118,7 @@ fn run() -> Result<(), String> {
             Err(()) => todo!(),
         }
 
-        match BackendGenerator::generate_module(&ir_module, qu_backend::TargetKind::Ccode, command.output_path) {
+        match BackendGenerator::generate_module(&ir_module, command.target.to_backend_target(), command.output_path) {
             Ok(_) => (),
             Err(err) => return Err(err.to_string()),
         }

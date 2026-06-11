@@ -149,7 +149,7 @@ pub(super) fn parse_expression(ctx: &mut ParseContext, precedence: Precedence) -
                 }
 
                 // Consume the infix operator token itself before parsing the rest
-                ctx.next()?;
+                ctx.next();
                 left = infix(ctx, left)?;
             }
             _ => break,
@@ -174,7 +174,7 @@ fn parse_member_access_expr(ctx: &mut ParseContext, _reciever: ExprRef) -> PResu
 }
 
 fn parse_primary_expr(ctx: &mut ParseContext) -> PResult<ExprRef> {
-    let token = ctx.next()?;
+    let token = ctx.next();
     match token.kind {
         TokenKind::Identifier => {
             return Some(qu_ast::expr::Expr::new(
@@ -240,7 +240,7 @@ pub(super) fn parse_block_(ctx: &mut ParseContext) -> PResult<qu_ast::expr::Bloc
     while !ctx.is_sp(Separator::CloseBrace) {
         let stmt = parse_statement(ctx)?;
         if stmt.is_expr() && !ctx.is_sp(Separator::SemiColon) {
-            ctx.skip_until(false, |t| t.is_sp(Separator::CloseBrace))?;
+            ctx.skip_until(false, |t| t.is_sp(Separator::CloseBrace));
             ctx.emit(
                 Diagnostic::new(
                     Severity::Error,
@@ -256,7 +256,7 @@ pub(super) fn parse_block_(ctx: &mut ParseContext) -> PResult<qu_ast::expr::Bloc
                     stmt.span().clone(),
                 ),
             );
-            ctx.skip_until(true, |t| t.is_sp(Separator::SemiColon))?;
+            ctx.skip_until(true, |t| t.is_sp(Separator::SemiColon));
         } else if stmt.is_expr() {
             ctx.eat([tok!(sp Separator::SemiColon)])?;
         }
@@ -269,7 +269,25 @@ pub(super) fn parse_block_(ctx: &mut ParseContext) -> PResult<qu_ast::expr::Bloc
 pub(super) fn parse_tuple_expr(
     ctx: &mut ParseContext,
 ) -> Option<ExprRef> {
-    todo!();
+    let begin = ctx.next().span;
+    if ctx.try_eat(tok!(sp Separator::CloseParen)) {
+        return Some(Expr::new(begin.cover(ctx.previous().span), ExprData::Unit));
+    }
+
+    let inner_expr = parse_expression(ctx, Precedence::None)?;
+
+    if ctx.is_sp(Separator::Comma) {
+        let mut tuple_members = vec![inner_expr];
+        while ctx.is_sp(Separator::Comma) && !ctx.is_sp(Separator::CloseParen) {
+            ctx.next();
+            let expr = parse_expression(ctx, Precedence::None)?;
+            tuple_members.push(expr);
+        }
+        ctx.eat([tok!(sp Separator::CloseParen)])?;
+        return Some(Expr::new_tuple(begin.cover(ctx.previous().span), tuple_members))
+    }
+
+    Some(inner_expr)
 }
 
 pub(super) fn parse_function_call(
@@ -284,7 +302,7 @@ pub(super) fn parse_function_call(
                 None
             })?;
 
-        if ctx.try_eat(TokenKind::Operator(Operator::Assign))? {
+        if ctx.try_eat(TokenKind::Operator(Operator::Assign)) {
             if !argument.is_identifier() {
                 ctx.emit(Diagnostic::new(
                     Severity::Error,
@@ -292,7 +310,7 @@ pub(super) fn parse_function_call(
                     ctx.previous().span,
                     format!("expected one of `,` or `)`"),
                 ).with_label(format!("lhs is not an identifier, hence cannot declare named parameter"), argument.span));
-                ctx.skip_to(true, [TokenKind::Separator(Separator::CloseParen)])?;
+                ctx.skip_to(true, [TokenKind::Separator(Separator::CloseParen)]);
                 return None;
             }
             let value = parse_expression(ctx, Precedence::None)?;
@@ -305,7 +323,7 @@ pub(super) fn parse_function_call(
             arguments.push(CallArgument::Expr(argument));
         }
 
-        if !ctx.try_eat(TokenKind::Separator(Separator::Comma))? {
+        if !ctx.try_eat(TokenKind::Separator(Separator::Comma)) {
             break;
         }
 

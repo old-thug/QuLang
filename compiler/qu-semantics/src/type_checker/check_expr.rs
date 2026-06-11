@@ -14,6 +14,11 @@ impl<'a> TypeChecker<'a> {
             expr::ExprData::Integer(_) => Some(Self::TYPEID_I32),
             expr::ExprData::Call(_) => self.check_call(expr),
             expr::ExprData::BinaryOperation(_) => self.check_binop(expr),
+            expr::ExprData::Unit => {
+                let type_id = self.get_type_id_of_kind(TypeKind::Void);
+                self.map_locus_to_type(expr.span, &type_id);
+                Some(type_id)
+            },
             _ => todo!("{:?}", expr.data()),
         }
     }

@@ -7,23 +7,25 @@ pub type Option[T] =
     | None
     ;
 
-pub fn unwrap[T](move opt: Opt[T]) -> T {
-    if opt is {
-        .Some(val) => return val,
-        .None => Core.panic("Option::unwrap called on None"),
+impl[T] Option[T] {
+    pub fn unwrap(move opt: Option[T]) -> T {
+        if opt is {
+            .Some(val) => val,
+            .None => Core.panic("Opt::unwrap called on None"),
+        }
     }
-}
 
-pub fn unwrap_or[T](move opt: Opt[T], default: T) -> T {
-    if opt is {
-        .Some(val) => return val,
-        .None => return default,
+    pub fn unwrap_or(move opt: Option[T], default: T) -> T {
+        if opt is {
+            .Some(val) => val,
+            .None => default,
+        }
     }
-}
 
-pub fn map[T, U](move opt: Opt[T], f: fn(T) -> U) -> Opt[U] {
-    if opt is {
-        .Some(val) => return Option.Some(f(val)),
-        .None => return None,
+    pub fn map[U](move opt: Option[T], f: fn(move T) -> U) -> Option[U] {
+        if opt is {
+            .Some(val) => Option.Some(f(val)),
+            .None => None,
+        }
     }
 }
