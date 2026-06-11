@@ -8,7 +8,7 @@ pub mod generics;
 pub mod stmt;
 pub mod type_hint;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Name {
     pub span: Span,
     pub value: String,

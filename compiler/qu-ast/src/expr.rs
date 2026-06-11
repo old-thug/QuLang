@@ -45,9 +45,15 @@ pub enum StringKind {
 }
 
 #[derive(Debug, Clone)]
+pub enum CallArgument {
+    Expr(ExprRef),
+    Assign(Name, ExprRef),
+}
+
+#[derive(Debug, Clone)]
 pub struct Call {
-    callee: ExprRef,
-    arguments: Vec<ExprRef>,
+    pub callee: ExprRef,
+    pub arguments: Vec<CallArgument>,
 }
 
 #[derive(Debug, Clone)]
@@ -57,9 +63,9 @@ pub struct Block {
 
 #[derive(Debug, Clone)]
 pub struct BinaryOperation {
-    left: ExprRef,
-    right: ExprRef,
-    operator: BinaryOperator,
+    pub left: ExprRef,
+    pub right: ExprRef,
+    pub operator: BinaryOperator,
 }
 
 #[derive(Debug, Clone)]
@@ -135,7 +141,7 @@ impl Expr {
         )
     }
 
-    pub fn new_call(span: Span, callee: ExprRef, arguments: Vec<ExprRef>) -> ExprRef {
+    pub fn new_call(span: Span, callee: ExprRef, arguments: Vec<CallArgument>) -> ExprRef {
         Self::new(span, ExprData::Call(Call { callee, arguments }))
     }
 
@@ -145,5 +151,12 @@ impl Expr {
 
     pub fn new_member_access(span: Span, reciever: ExprRef, member: Name) -> ExprRef {
         Self::new(span, ExprData::MemberAccess { reciever, member })
+    }
+
+    pub fn is_identifier(&self) -> bool {
+        match self.data() {
+            ExprData::Identifier(_) => true,
+            _ => false,
+        }
     }
 }

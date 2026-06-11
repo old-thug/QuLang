@@ -1,3 +1,6 @@
+use std::collections::{HashMap, HashSet};
+
+use qu_ast::Name;
 use qu_common::Storage;
 use qu_span::Span;
 
@@ -11,10 +14,9 @@ pub type SymbolStorage = Storage<Span, Symbol>;
 
 #[derive(Debug, Clone)]
 pub struct Symbol {
-    pub state: State,
     pub defined_at: Span,
-    pub scope_id: ScopeId,
     pub resolved_type: Option<TypeId>,
+    pub data: SymbolData,
 }
 
 #[derive(Debug, Clone)]
@@ -24,12 +26,38 @@ pub enum State {
     PartiallyInvalid,
 }
 
+pub type ParameterNames = Vec<(Name, usize)>;
+
+#[derive(Debug, Clone)]
+pub enum SymbolData {
+    Function {
+        parameter_names: ParameterNames,
+        parameter_types: Vec<TypeId>,
+    },
+    Variable {
+        state: State,
+        scope_id: ScopeId,
+    },
+}
+
+impl SymbolData {
+    pub fn new_function_data(parameter_names: ParameterNames, parameter_types: Vec<TypeId>) -> Self {
+        Self::Function {
+            parameter_names,
+            parameter_types
+        }
+    }
+
+    pub fn new_var_data(scope_id: ScopeId) -> Self {
+        Self::Variable { state: State::Ok, scope_id }
+    }
+}
+
 impl Symbol {
-    pub fn new_empty(span: Span, scope_id: ScopeId) -> Symbol {
+    pub fn new_empty(span: Span, scope_id: ScopeId, data: SymbolData) -> Symbol {
         Symbol {
-            state: State::Ok,
+            data,
             defined_at: span,
-            scope_id,
             resolved_type: None,
         }
     }

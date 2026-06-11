@@ -23,7 +23,7 @@ impl BackendGenerator {
         match kind {
             TargetKind::Ccode => {
                 let mut file = std::fs::File::options()
-                    .create_new(true)
+                    .truncate(true)
                     .create(true)
                     .write(true)
                     .open(output)?;
@@ -32,6 +32,7 @@ impl BackendGenerator {
             TargetKind::Executable => {
                 {
                     let mut file = std::fs::File::options()
+                        .truncate(true)
                         .create_new(true)
                         .write(true)
                         .open(".qu-gen.c")?;

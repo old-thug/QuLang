@@ -1,6 +1,5 @@
 use qu_ast::{
-    expr::{BinaryOperator, Expr, ExprData, ExprRef},
-    stmt,
+    Name, expr::{BinaryOperator, CallArgument, Expr, ExprData, ExprRef}, stmt
 };
 use qu_diagnostics::{Diagnostic, Severity};
 
@@ -101,6 +100,16 @@ const RULES: &[(TokenKind, Rule)] = &[
             None,
         ),
     ),
+    // Function Call
+    (
+        TokenKind::Separator(Separator::OpenParen),
+        (
+            Precedence::Call,
+            Associativity::Left,
+            Some(parse_tuple_expr),
+            Some(parse_function_call),
+        )
+    )
 ];
 
 fn get_rule(tok: TokenKind) -> Option<Rule> {
@@ -255,4 +264,52 @@ pub(super) fn parse_block_(ctx: &mut ParseContext) -> PResult<qu_ast::expr::Bloc
     }
     ctx.eat([tok!(sp Separator::CloseBrace)])?;
     Some(qu_ast::expr::Block { stmts })
+}
+
+pub(super) fn parse_tuple_expr(
+    ctx: &mut ParseContext,
+) -> Option<ExprRef> {
+    todo!();
+}
+
+pub(super) fn parse_function_call(
+    ctx: &mut ParseContext,
+    callee: ExprRef
+) -> Option<ExprRef> {
+    let mut arguments = Vec::new();
+    while !ctx.is_sp(Separator::CloseParen) {
+        let argument = parse_expression(ctx, Precedence::None)
+            .or_else(|| {
+                ctx.skip_until(false, |t| t.is_sp(Separator::Comma) || t.is_sp(Separator::CloseParen));
+                None
+            })?;
+
+        if ctx.try_eat(TokenKind::Operator(Operator::Assign))? {
+            if !argument.is_identifier() {
+                ctx.emit(Diagnostic::new(
+                    Severity::Error,
+                    format!("unexpected token"),
+                    ctx.previous().span,
+                    format!("expected one of `,` or `)`"),
+                ).with_label(format!("lhs is not an identifier, hence cannot declare named parameter"), argument.span));
+                ctx.skip_to(true, [TokenKind::Separator(Separator::CloseParen)])?;
+                return None;
+            }
+            let value = parse_expression(ctx, Precedence::None)?;
+            let name = Name {
+                span: argument.span,
+                value: ctx.slice(argument.span)
+            };
+            arguments.push(CallArgument::Assign(name, value));
+        } else {
+            arguments.push(CallArgument::Expr(argument));
+        }
+
+        if !ctx.try_eat(TokenKind::Separator(Separator::Comma))? {
+            break;
+        }
+
+    }
+    ctx.eat([TokenKind::Separator(Separator::CloseParen)])?;
+    Some(Expr::new_call(callee.span().cover(ctx.previous().span), callee, arguments))
 }

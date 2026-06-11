@@ -85,6 +85,7 @@ impl<'a> Cgenerator<'a> {
         }
         self.write_def(format!(") {{\n"));
         for instruction in &function.instructions {
+            //println!("Here: {:?}", instruction);
             self.gen_instruction(instruction);
         }
         self.write_def(format!("}}\n"));
@@ -106,6 +107,17 @@ impl<'a> Cgenerator<'a> {
             InstructionKind::Return(v) => {
                 self.write_def(format!("    return {};\n", self.write_value(*v)));
             },
+            InstructionKind::Call { callee, args } => {
+                let target = target.unwrap();
+                self.write_def(format!("    {} = {}(", self.write_value(target), self.write_value(*callee)));
+                for (idx, arg) in args.iter().enumerate() {
+                    if idx != 0 {
+                        self.write_def(", ".to_string());
+                    }
+                    self.write_def(format!("{}", self.write_value(*arg)));
+                }
+                self.write_def(format!(");\n"));
+            },
             _ => todo!("{:?}", instruction.1),
         }
     }
@@ -117,6 +129,13 @@ impl<'a> Cgenerator<'a> {
             Value::ConstantString(v) => format!("{v}"),
             Value::Ref(id) => format!("local_{}", id.0),
             Value::RefParam(id) => format!("param_{id}"),
+            Value::RefGlobal(id) => {
+                let global = &self.module.get_globals()[id.0];
+                match global {
+                    GlobalValue::Constant(name) => format!("{name}"),
+                    GlobalValue::Function(function) => format!("{}", function.get_name()),
+                }
+            },
             Value::True => format!("true"),
             Value::False => format!("false"),
             Value::Unit => format!(""),

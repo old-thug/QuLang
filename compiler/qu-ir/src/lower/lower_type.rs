@@ -17,7 +17,7 @@ impl<'a> IrLowerer<'a> {
             TypeKind::U32 => IrType::U32,
             TypeKind::U64 => IrType::U64,
             TypeKind::String => IrType::TypedPointer(Box::new(IrType::Char)),
-            TypeKind::Function { return_type, ref parameter_types } => {
+            TypeKind::Function { return_type, ref parameter_types, .. } => {
                 let mut parameters = Vec::new();
                 let return_type_layout = &self.module.get_types().get_pool()[return_type.0];
                 let return_type = self.lower_type(return_type_layout);

@@ -1,4 +1,9 @@
+use std::collections::HashSet;
+
+use qu_ast::Name;
 use qu_span::Span;
+
+use crate::symbol::ParameterNames;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TypeId(pub usize);
@@ -37,6 +42,7 @@ pub enum TypeKind {
     Named(String),
     Function {
         return_type: TypeId,
+        parameter_names: ParameterNames,
         parameter_types: Vec<TypeId>,
     },
 }

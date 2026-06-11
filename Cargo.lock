@@ -312,6 +312,7 @@ dependencies = [
 name = "qu-entities"
 version = "0.1.0"
 dependencies = [
+ "qu-ast",
  "qu-common",
  "qu-span",
 ]

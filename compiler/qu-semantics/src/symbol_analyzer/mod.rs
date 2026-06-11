@@ -9,7 +9,7 @@ use qu_common::Storage;
 use qu_context::ModuleId;
 use qu_diagnostics::Diagnostic;
 use qu_entities::scope::{Scope, ScopeFlag, ScopeId, ScopeStorage};
-use qu_entities::symbol::{Symbol, SymbolId, SymbolStorage};
+use qu_entities::symbol::{Symbol, SymbolData, SymbolId, SymbolStorage};
 use qu_module::Module;
 use qu_span::{Span, Spanned};
 
@@ -109,8 +109,8 @@ impl<'a> SymbolAnalyzer<'a> {
         self.find_id_in_scope_and(self.current_scope_id(), &name, |_, id| Some(id))
     }
 
-    pub(super) fn add_new_empty_symbol_to_scope(&mut self, name: qu_ast::Name, scope_id: ScopeId) {
-        let new_symbol = Symbol::new_empty(name.span, scope_id);
+    pub(super) fn add_new_empty_symbol_to_scope(&mut self, name: qu_ast::Name, scope_id: ScopeId, data: SymbolData) {
+        let new_symbol = Symbol::new_empty(name.span, scope_id, data);
         let new_symbol_id = self.get_new_symbol_id(new_symbol);
         self.map_locus_to_symbol(name.span, new_symbol_id);
         self.map_locus_to_scope(name.span, scope_id);

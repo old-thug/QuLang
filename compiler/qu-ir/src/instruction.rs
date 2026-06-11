@@ -1,4 +1,6 @@
-use crate::{function::LocalId, irtype::IrType, value::ValueRef};
+use qu_ast::expr::BinaryOperator;
+
+use crate::{function::LocalId, irtype::IrType, value::{Value, ValueRef}};
 
 #[derive(Debug, Clone)]
 pub struct Instruction(
@@ -15,4 +17,13 @@ pub enum InstructionKind {
     Store(/* src */ ValueRef),
     LoadLocal(/* id */ LocalId),
     Return(/* value */ ValueRef),
+    Call {
+        callee: ValueRef,
+        args: Vec<ValueRef>,
+    },
+    Binop {
+        op: BinaryOperator,
+        lhs: ValueRef,
+        rhs: ValueRef,
+    }
 }

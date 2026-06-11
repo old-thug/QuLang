@@ -1,4 +1,4 @@
-use qu_ast::type_hint;
+use qu_ast::{expr::BinaryOperator, type_hint};
 
 use crate::{instruction::{Instruction, InstructionKind}, irtype::IrType, value::{Value, ValueRef}};
 
@@ -22,5 +22,17 @@ impl IrBuilder {
 
     pub(crate) fn create_store(&mut self, dst: ValueRef, src: ValueRef) -> Option<()> {
         self.add_instruction(Instruction(Some(dst), InstructionKind::Store(src)))
+    }
+
+    pub(crate) fn create_call(&mut self, irtype: IrType, callee: ValueRef, args: Vec<ValueRef>) -> Option<ValueRef> {
+        let dst = self.create_temporary(irtype)?;
+        self.peek_current_function_mut()?.add_instruction(Instruction(Some(dst), InstructionKind::Call { callee, args }));
+        Some(dst)
+    }
+
+    pub(crate) fn create_binop(&mut self, irtype: IrType, lhs: ValueRef, rhs: ValueRef, op: BinaryOperator) -> Option<ValueRef> {
+        let dst = self.create_temporary(irtype)?;
+        self.peek_current_function_mut()?.add_instruction(Instruction(Some(dst), InstructionKind::Binop { op, lhs, rhs }));
+        Some(dst)
     }
 }

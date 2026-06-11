@@ -4,5 +4,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-qu-span = { path = "../qu-span/" }
+qu-span   = { path = "../qu-span/" }
 qu-common = { path = "../qu-common/" }
+qu-ast    = { path = "../qu-ast/" }

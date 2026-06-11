@@ -5,14 +5,16 @@ mod resolver;
 mod type_coercer;
 
 use std::any::Any;
+use std::collections::HashSet;
 
+use qu_ast::stmt::FunctionDefinition;
 use qu_ast::{Ast, stmt};
-use qu_common::Storage;
+use qu_common::{Storage, extract};
 use qu_diagnostics::Diagnostic;
-use qu_entities::{TypeStorage, layout};
-use qu_entities::layout::{TypeId, TypeLayout};
+use qu_entities::layout::{TypeId, TypeKind, TypeLayout};
 use qu_entities::scope::ScopeStorage;
-use qu_entities::symbol::SymbolStorage;
+use qu_entities::symbol::{SymbolData, SymbolStorage};
+use qu_entities::{TypeStorage, layout};
 use qu_module::Module;
 use qu_span::Span;
 use type_coercer::{CoerceResult, TypeCoercer};
@@ -45,10 +47,102 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    pub(super) fn check_function_(&mut self, function: &FunctionDefinition) -> Option<()> {
+        let return_type_id = match function.prototype.return_type {
+            Some(ref type_hint) => self.resolve_type_to_id(type_hint),
+            None => Self::TYPEID_VOID,
+        };
+        let mut parameter_types = Vec::new();
+        for param in &function.prototype.parameters {
+            let param_type_id = match (&param.type_hint, &param.default_value) {
+                (Some(type_hint), None) => self.resolve_type_to_id(&type_hint),
+                (None, Some(expression)) => self.check_expression(&expression)?,
+                (Some(type_hint), Some(expression)) => {
+                    let target_type_id = self.resolve_type_to_id(type_hint);
+                    let source_type_id = self.check_expression(expression)?;
+                    self.try_coerce(
+                        (type_hint.span, target_type_id),
+                        (expression.span, source_type_id),
+                    )?;
+                    target_type_id
+                }
+                _ => unreachable!(),
+            };
+
+            if let Some(symbol) = self
+                .module
+                .get_symbols_mut()
+                .get_from_key_mut(&param.name.span)
+            {
+                symbol.resolved_type = Some(param_type_id);
+            }
+
+            parameter_types.push(param_type_id);
+            self.module
+                .get_types_mut()
+                .map(param.name.span, param_type_id.0);
+        }
+
+        let mut parameter_names = Vec::new();
+        if let Some(function_symbol) = self
+            .module
+            .get_symbols_mut()
+            .get_from_key_mut(&function.name.span)
+        {
+            match &mut function_symbol.data {
+                SymbolData::Function {
+                    parameter_names: pn,
+                    parameter_types: pt,
+                    ..
+                } => {
+                    parameter_names = pn.clone();
+                    for param_type_id in &parameter_types {
+                        pt.push(*param_type_id);
+                    }
+
+                    assert_eq!(
+                        parameter_names.len(),
+                        parameter_types.len(),
+                        "names of function parameter must match the types of the parameters",
+                    );
+                }
+                _ => unreachable!(),
+            }
+        } else {
+            return None;
+        }
+
+        // generate layout and register back to type table
+        let function_type_layout = TypeKind::Function {
+            return_type: return_type_id,
+            parameter_names,
+            parameter_types: parameter_types.clone(),
+        };
+        let function_type_id = self.get_type_id_of_kind(function_type_layout);
+        self.module
+            .get_types_mut()
+            .map(function.name.span, function_type_id.0);
+
+        let name = self.get_type_name(&function_type_id);
+        // re-fetch final symbol for atomic completion
+        if let Some(function_symbol) = self
+            .module
+            .get_symbols_mut()
+            .get_from_key_mut(&function.name.span)
+        {
+            function_symbol.resolved_type = Some(function_type_id);
+        }
+        Some(())
+    }
+
     fn collect_types(&mut self, ast: &Ast) -> Option<()> {
         for stmt in ast {
             match stmt.data() {
                 stmt::StmtData::TypeDefinition(_) => todo!(),
+                // TODO: move this to it's own function
+                stmt::StmtData::FunctionDefinition(function) => {
+                    self.check_function_(function)?;
+                }
                 _ => {}
             }
         }
@@ -64,6 +158,7 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub(super) fn get_type_name(&mut self, type_id: &TypeId) -> String {
+        let this = unsafe { self as *mut Self };
         let layout = self.get_type_layout_from_id(type_id).unwrap();
         match layout.kind {
             layout::TypeKind::I8 => format!("i8"),
@@ -78,7 +173,23 @@ impl<'a> TypeChecker<'a> {
             layout::TypeKind::Char => format!("char"),
             layout::TypeKind::Void => format!("void"),
             layout::TypeKind::Bool => format!("bool"),
-            _ => todo!(),
+            layout::TypeKind::Function {
+                return_type,
+                ref parameter_names,
+                ref parameter_types,
+            } => {
+                let mut out = format!("fn(");
+                parameter_types.iter().enumerate().for_each(|(idx, ty)| {
+                    if idx != 0 {
+                        out += ", ";
+                    }
+                    out += &format!("{}", unsafe { &mut *this }.get_type_name(ty));
+                });
+                out += &format!(") -> {}", unsafe { &mut *this }.get_type_name(&return_type));
+                out
+            }
+            layout::TypeKind::Pointer(inner) => format!("*{}", self.get_type_name(&inner)),
+            _ => todo!("{:?}", layout.kind),
         }
     }
 
@@ -89,7 +200,8 @@ impl<'a> TypeChecker<'a> {
             }
         }
         let new_id = self.module.get_types_mut().get_pool().len();
-        self.module.get_types_mut()
+        self.module
+            .get_types_mut()
             .get_pool_mut()
             .push(TypeLayout::new(type_kind, None));
         layout::TypeId(new_id)
@@ -149,6 +261,14 @@ impl<'a> TypeChecker<'a> {
                 self.emit_diag(diag);
                 None
             }
+        }
+    }
+
+    pub(super) fn can_coerce(&mut self, target: TypeId, source: TypeId) -> bool {
+        match TypeCoercer::coerce(self, target, source) {
+            CoerceResult::Identity => true,
+            CoerceResult::IntegerWidening => true,
+            _ => false,
         }
     }
 }

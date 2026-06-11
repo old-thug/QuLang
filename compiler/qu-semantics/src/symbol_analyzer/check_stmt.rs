@@ -1,3 +1,5 @@
+use std::collections::{HashMap, HashSet};
+
 use qu_ast::{
     Ast,
     stmt::{self, StmtRef},
@@ -5,7 +7,7 @@ use qu_ast::{
 use qu_common::extract;
 
 use crate::symbol_analyzer;
-use qu_entities::scope::{ScopeFlag, ScopeId};
+use qu_entities::{scope::{ScopeFlag, ScopeId}, symbol::{ParameterNames, SymbolData}};
 use qu_entities::symbol::Symbol;
 
 use super::SymbolAnalyzer;
@@ -46,14 +48,29 @@ impl<'a> SymbolAnalyzer<'a> {
             {
                 return None;
             }
-            self.add_new_empty_symbol_to_scope(function.name.clone(), current_scope_id);
+
         }
         // Create new scope for function parameters
         self.enter_new_scope(ScopeFlag::Function);
         let new_scope_id = self.current_scope_id();
-        for param in &function.prototype.parameters {
-            self.add_new_empty_symbol_to_scope(param.name.clone(), new_scope_id);
+        let mut parameter_names = ParameterNames::new();
+        for (index, param) in function.prototype.parameters.iter().enumerate() {
+            self.add_new_empty_symbol_to_scope(
+                param.name.clone(),
+                new_scope_id,
+                SymbolData::new_var_data(new_scope_id)
+            );
+            parameter_names.push((param.name.clone(), index));
         }
+
+        if current_scope_id != ScopeId(0) {
+            self.add_new_empty_symbol_to_scope(
+                function.name.clone(),
+                current_scope_id,
+                SymbolData::new_function_data(parameter_names, Vec::new())
+            );
+        }
+
         if let Some(ref body) = function.body {
             // Check function body
             self.check_expression(body)?;
@@ -83,7 +100,11 @@ impl<'a> SymbolAnalyzer<'a> {
             return None;
         }
         self.check_expression(&vardecl.initializer)?;
-        self.add_new_empty_symbol_to_scope(vardecl.name.clone(), current_scope_id);
+        self.add_new_empty_symbol_to_scope(
+            vardecl.name.clone(),
+            current_scope_id,
+            SymbolData::new_var_data(current_scope_id)
+        );
         Some(())
     }
 }

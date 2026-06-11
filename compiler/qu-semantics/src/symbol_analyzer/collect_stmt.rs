@@ -1,6 +1,8 @@
+use std::collections::HashSet;
+
 use qu_ast::stmt::{self, StmtRef};
 use qu_diagnostics::{Diagnostic, Label, Severity};
-use qu_entities::symbol::Symbol;
+use qu_entities::symbol::{ParameterNames, Symbol, SymbolData};
 use qu_common::extract;
 
 use crate::symbol_analyzer::SymbolAnalyzer;
@@ -33,7 +35,17 @@ impl<'a> SymbolAnalyzer<'a> {
             {
                 return None;
             }
-            self.add_new_empty_symbol_to_scope(function_name.clone(), current_scope_id);
+
+            let mut parameter_names = ParameterNames::new();
+            for (index, param) in function.prototype.parameters.iter().enumerate() {
+                parameter_names.push((param.name.clone(), index));
+            }
+
+            self.add_new_empty_symbol_to_scope(
+                function_name.clone(),
+                current_scope_id,
+                SymbolData::new_function_data(parameter_names, Vec::new()),
+            );
         }
 
         // Check the function body.

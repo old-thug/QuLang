@@ -1,9 +1,14 @@
+use std::collections::HashSet;
+
 use qu_ast::{
     stmt::{self, StmtRef},
     type_hint,
 };
-use qu_entities::layout::TypeKind;
 use qu_common::extract;
+use qu_entities::{
+    layout::TypeKind,
+    symbol::{Symbol, SymbolData},
+};
 
 use crate::type_checker::type_coercer::TypeCoercer;
 
@@ -21,40 +26,15 @@ impl<'a> TypeChecker<'a> {
 
     pub(super) fn check_function(&mut self, stmt: &StmtRef) -> Option<()> {
         extract!(stmt.data(), stmt::StmtData::FunctionDefinition(function));
-        let return_type_id = match function.prototype.return_type {
-            Some(ref type_hint) => self.resolve_type_to_id(type_hint),
-            None => Self::TYPEID_VOID,
-        };
-        let mut parameter_types = Vec::new();
-        for param in &function.prototype.parameters {
-            let param_type_id = match (&param.type_hint, &param.default_value) {
-                (Some(type_hint), None) => self.resolve_type_to_id(&type_hint),
-                (None, Some(expression)) => self.check_expression(&expression)?,
-                (Some(type_hint), Some(expression)) => {
-                    let target_type_id = self.resolve_type_to_id(type_hint);
-                    let source_type_id = self.check_expression(expression)?;
-                    self.try_coerce(
-                        (type_hint.span, target_type_id),
-                        (expression.span, source_type_id),
-                    )?;
-                    target_type_id
-                }
-                _ => unreachable!(),
+        let should_check =
+            if let Some(sym) = self.module.get_symbols().get_from_key(&function.name.span) {
+                sym.resolved_type.is_none()
+            } else {
+                true
             };
-            let symbol = self.module.get_symbols_mut().get_from_key_mut(&param.name.span)?;
-            symbol.resolved_type = Some(param_type_id);
-            parameter_types.push(param_type_id);
+        if should_check {
+            self.check_function_(function)?;
         }
-
-        let function_type_id = self.get_type_id_of_kind(TypeKind::Function {
-            parameter_types,
-            return_type: return_type_id,
-        });
-
-        self.module.get_types_mut().map(function.name.span, function_type_id.0);
-        let sym = self.module.get_symbols_mut().get_from_key_mut(&function.name.span)?;
-        sym.resolved_type = Some(function_type_id);
-
         if let Some(ref body) = function.body {
             self.check_expression(body)?;
         }
@@ -83,7 +63,10 @@ impl<'a> TypeChecker<'a> {
             }
             None => source_type_id,
         };
-        let symbol = self.module.get_symbols_mut().get_from_key_mut(&vardecl.name.span)?;
+        let symbol = self
+            .module
+            .get_symbols_mut()
+            .get_from_key_mut(&vardecl.name.span)?;
         symbol.resolved_type = Some(type_id);
         self.map_locus_to_type(vardecl.name.span, &type_id);
         Some(())
